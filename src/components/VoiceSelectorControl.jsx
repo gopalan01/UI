@@ -309,8 +309,10 @@ export default function VoiceSelectorControl({
                     onClick={() => onSelectLanguage(lang.id)}
                   >
                     <span className="chip-flag-icon">{lang.flag}</span>
-                    <span className="chip-label-primary">{lang.name}</span>
-                    <span className="chip-label-sub">({lang.nativeName})</span>
+                    <div className="chip-text-content">
+                      <span className="chip-label-primary">{lang.name}</span>
+                      <span className="chip-label-sub">({lang.nativeName})</span>
+                    </div>
                     {isSelected && <Check size={12} className="chip-check text-emerald" />}
                   </button>
                 );
@@ -345,8 +347,10 @@ export default function VoiceSelectorControl({
                     className={`clean-selection-chip chip-region ${isSelected ? 'selected-chip' : ''}`}
                     onClick={() => onSelectRegion(reg.id)}
                   >
-                    <MapPin size={12} className="chip-pin-icon text-blue" />
-                    <span className="chip-label-primary">{reg.name}</span>
+                    <MapPin size={12} className="chip-pin-icon text-blue flex-shrink-0" />
+                    <div className="chip-text-content">
+                      <span className="chip-label-primary">{reg.name}</span>
+                    </div>
                     {isSelected && <Check size={12} className="chip-check text-emerald" />}
                   </button>
                 );
@@ -382,8 +386,10 @@ export default function VoiceSelectorControl({
                     onClick={() => onSelectSlang(slang.id)}
                     title={slang.description}
                   >
-                    <Radio size={12} className="chip-radio-icon text-cyan" />
-                    <span className="chip-label-primary">{slang.name}</span>
+                    <Radio size={12} className="chip-radio-icon text-cyan flex-shrink-0" />
+                    <div className="chip-text-content">
+                      <span className="chip-label-primary">{slang.name}</span>
+                    </div>
                     {slang.badge && <span className="chip-badge-tag">{slang.badge}</span>}
                     {isSelected && <Check size={12} className="chip-check text-emerald" />}
                   </button>
@@ -408,7 +414,7 @@ export default function VoiceSelectorControl({
                 <ChevronLeft size={12} /> Slang
               </button>
             </div>
-            <div className="chips-wrap-grid">
+            <div className="chips-wrap-grid voice-selection-grid">
               {currentVoiceList.map((v) => {
                 const isSelected = currentVoice.id === v.id || config.voice === v.id;
                 const isUserVoice = v.id === 'user' || v.gender === 'user';
@@ -418,7 +424,7 @@ export default function VoiceSelectorControl({
                     key={v.id}
                     type="button"
                     id={`voice-btn-${v.id}`}
-                    className={`clean-selection-chip chip-voice ${isSelected ? 'selected-chip' : ''}`}
+                    className={`clean-selection-chip chip-voice ${isUserVoice ? 'chip-voice-user' : ''} ${isSelected ? 'selected-chip' : ''}`}
                     onClick={() => {
                       onSelectVoice(v.id);
                       if (isUserVoice && !uploadedVoiceFile) {
@@ -428,13 +434,15 @@ export default function VoiceSelectorControl({
                     title={v.description}
                   >
                     <span className="chip-emoji-icon">{v.icon}</span>
-                    <span className="chip-label-primary">{v.name}</span>
-                    {v.nativeName && <span className="chip-label-sub">({v.nativeName})</span>}
+                    <div className="chip-text-content">
+                      <span className="chip-label-primary">{v.name}</span>
+                      {v.nativeName && <span className="chip-label-sub">({v.nativeName})</span>}
+                    </div>
                     {v.badge && <span className="chip-badge-tag">{v.badge}</span>}
                     {isUserVoice && uploadedVoiceFile && (
                       <span className="chip-badge-tag text-emerald">Ready</span>
                     )}
-                    {isSelected && <Check size={12} className="chip-check text-emerald" />}
+                    {isSelected && <Check size={13} className="chip-check text-emerald" />}
                   </button>
                 );
               })}
@@ -457,7 +465,7 @@ export default function VoiceSelectorControl({
                 <ChevronLeft size={12} /> Voice
               </button>
             </div>
-            <div className="chips-wrap-grid">
+            <div className="chips-wrap-grid emotion-selection-grid">
               {SUPPORTED_EMOTIONS.map((emo) => {
                 const isSelected = (config.emotion || 'default') === emo.id;
 
@@ -471,12 +479,14 @@ export default function VoiceSelectorControl({
                     title={emo.description}
                   >
                     <span className="chip-emoji-icon">{emo.icon}</span>
-                    <span className="chip-label-primary">{emo.name}</span>
-                    {emo.nativeName && (
-                      <span className="chip-label-sub">({emo.nativeName.split(' (')[0]})</span>
-                    )}
+                    <div className="chip-text-content">
+                      <span className="chip-label-primary">{emo.name}</span>
+                      {emo.nativeName && (
+                        <span className="chip-label-sub">({emo.nativeName.split(' (')[0]})</span>
+                      )}
+                    </div>
                     {emo.badge && <span className="chip-badge-tag">{emo.badge}</span>}
-                    {isSelected && <Check size={12} className="chip-check text-emerald" />}
+                    {isSelected && <Check size={13} className="chip-check text-emerald" />}
                   </button>
                 );
               })}

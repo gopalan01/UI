@@ -6,7 +6,6 @@ import {
   X,
   History,
   MessageSquare,
-  Plus,
   Pin,
   PinOff,
   Edit3,
@@ -14,7 +13,7 @@ import {
   MoreVertical,
   Check
 } from 'lucide-react';
-import thamiliLogo from '../assets/thamili-logo.jpg';
+import thamiliLogo from '../assets/thamili-logo.png';
 import { 
   getSavedConversations, 
   togglePinConversation, 
@@ -23,8 +22,8 @@ import {
 } from '../services/conversationHistoryService';
 
 export default function Sidebar({ 
-  isOpen, 
-  onClose, 
+  isOpen = false,
+  onClose,
   onNavigate,
   userName = 'Gopi',
   onOpenProfileModal,
@@ -55,7 +54,7 @@ export default function Sidebar({
       window.removeEventListener('aurqo_conversations_updated', loadConversations);
       window.removeEventListener('storage', loadConversations);
     };
-  }, [isOpen]);
+  }, []);
 
   // Focus and select input text when editing begins
   useEffect(() => {
@@ -148,7 +147,6 @@ export default function Sidebar({
         onClick={() => {
           if (!isEditing && onSelectConversation) {
             onSelectConversation(item);
-            if (window.innerWidth < 960 && onClose) onClose();
           }
         }}
         title={item.title}
@@ -297,177 +295,146 @@ export default function Sidebar({
   ];
 
   return (
-    <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div 
-          className="sidebar-backdrop" 
-          onClick={onClose} 
-          aria-hidden="true" 
-        />
-      )}
-
-      <aside className={`aurqo-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
-        {/* Brand Header with New THAMILI Logo */}
-        <div className="sidebar-brand">
-          <div className="brand-logo-container">
-            <img 
-              src={thamiliLogo} 
-              alt="THAMILI" 
-              className="aurqo-brand-logo thamili-brand-logo"
-            />
-          </div>
-          {onClose && (
-            <button 
-              id="sidebar-close-btn"
-              className="sidebar-close-btn" 
-              onClick={onClose}
-              aria-label="Close Sidebar"
-              title="Close Menu"
-            >
-              <X size={20} />
-            </button>
-          )}
+    <aside className={`aurqo-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+      {/* Brand Header with New THAMILI Logo & Mobile Close */}
+      <div className="sidebar-brand">
+        <div className="brand-logo-container">
+          <img 
+            src={thamiliLogo} 
+            alt="THAMILI" 
+            className="aurqo-brand-logo thamili-brand-logo"
+          />
         </div>
+        {onClose && (
+          <button 
+            type="button" 
+            className="sidebar-mobile-close-btn" 
+            onClick={onClose}
+            title="Close Menu"
+            aria-label="Close Sidebar"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
 
-        {/* Navigation & History Scroll Area */}
-        <div className="sidebar-nav-scroll-area" ref={sidebarNavRef}>
-          {/* Primary Nav List (Original Clean AI Audio) */}
-          <nav className="sidebar-nav primary-nav">
-            {primaryNavItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = item.isAudio;
+      {/* Navigation & History Scroll Area */}
+      <div className="sidebar-nav-scroll-area" ref={sidebarNavRef}>
+        {/* Primary Nav List (Original Clean AI Audio) */}
+        <nav className="sidebar-nav primary-nav">
+          {primaryNavItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = item.isAudio;
 
-              return (
-                <button
-                  key={item.id}
-                  id={`nav-${item.id}`}
-                  className={`nav-item ${isActive ? 'active-nav-item' : 'inactive-nav-item'}`}
-                  onClick={() => {
-                    if (onNavigate) onNavigate(item.id);
-                    if (window.innerWidth < 960 && onClose) onClose();
-                  }}
-                  title={item.label}
-                >
-                  <IconComponent size={18} className="nav-icon" />
-                  <span className="nav-item-title">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+            return (
+              <button
+                key={item.id}
+                id={`nav-${item.id}`}
+                className={`nav-item ${isActive ? 'active-nav-item' : 'inactive-nav-item'}`}
+                onClick={() => {
+                  if (onNavigate) onNavigate(item.id);
+                }}
+                title={item.label}
+              >
+                <IconComponent size={18} className="nav-icon" />
+                <span className="nav-item-title">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-          {/* Quick Action: Start New Conversation */}
-          <div className="sidebar-new-conversation-wrap">
-            <button
-              id="sidebar-new-conversation-btn"
-              type="button"
-              className="sidebar-new-conv-btn"
-              onClick={() => {
-                if (onNewConversation) onNewConversation();
-                if (window.innerWidth < 960 && onClose) onClose();
-              }}
-              title="Start a fresh conversation (Conversation N)"
-            >
-              <Plus size={14} className="new-conv-plus-icon" />
-              <span>New Conversation</span>
-            </button>
+        {/* Dedicated HISTORY Section Header directly under Audio Generator */}
+        <div className="sidebar-history-section-wrapper">
+          <div className="sidebar-history-header-row">
+            <div className="sidebar-history-heading-left">
+              <History size={13} className="text-cyan sidebar-history-icon" />
+              <h4 className="sidebar-history-title">HISTORY</h4>
+            </div>
+            {conversations.length > 0 && (
+              <span className="sidebar-history-count-badge">
+                {conversations.length}
+              </span>
+            )}
           </div>
 
-          {/* Dedicated HISTORY Section Header directly under Audio Generator */}
-          <div className="sidebar-history-section-wrapper">
-            <div className="sidebar-history-header-row">
-              <div className="sidebar-history-heading-left">
-                <History size={13} className="text-cyan sidebar-history-icon" />
-                <h4 className="sidebar-history-title">HISTORY</h4>
+          {/* List of Saved Conversations */}
+          <div className="sidebar-history-list">
+            {conversations.length === 0 ? (
+              <div className="sidebar-history-empty">
+                <MessageSquare size={18} className="sidebar-empty-icon" />
+                <p className="sidebar-empty-title">No conversations saved yet</p>
+                <p className="sidebar-empty-desc">Your voice conversations will start as "Conversation 1" and automatically save here.</p>
               </div>
-              {conversations.length > 0 && (
-                <span className="sidebar-history-count-badge">
-                  {conversations.length}
-                </span>
-              )}
-            </div>
-
-            {/* List of Saved Conversations */}
-            <div className="sidebar-history-list">
-              {conversations.length === 0 ? (
-                <div className="sidebar-history-empty">
-                  <MessageSquare size={18} className="sidebar-empty-icon" />
-                  <p className="sidebar-empty-title">No conversations saved yet</p>
-                  <p className="sidebar-empty-desc">Your voice conversations will start as "Conversation 1" and automatically save here.</p>
-                </div>
-              ) : (
-                <div className="sidebar-history-groups-wrap">
-                  {/* 📌 PINNED SECTION */}
-                  {pinnedConversations.length > 0 && (
-                    <div className="sidebar-history-subgroup">
-                      <div className="sidebar-subgroup-title">
-                        <span>📌 PINNED</span>
-                      </div>
-                      <div className="sidebar-subgroup-items">
-                        {pinnedConversations.map(renderSidebarConversationRow)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* RECENT / UNPINNED HISTORY SECTION */}
+            ) : (
+              <div className="sidebar-history-groups-wrap">
+                {/* 📌 PINNED SECTION */}
+                {pinnedConversations.length > 0 && (
                   <div className="sidebar-history-subgroup">
-                    {pinnedConversations.length > 0 && (
-                      <div className="sidebar-subgroup-title">
-                        <span>RECENT</span>
-                      </div>
-                    )}
+                    <div className="sidebar-subgroup-title">
+                      <span>📌 PINNED</span>
+                    </div>
                     <div className="sidebar-subgroup-items">
-                      {unpinnedConversations.map(renderSidebarConversationRow)}
+                      {pinnedConversations.map(renderSidebarConversationRow)}
                     </div>
                   </div>
+                )}
+
+                {/* RECENT / UNPINNED HISTORY SECTION */}
+                <div className="sidebar-history-subgroup">
+                  {pinnedConversations.length > 0 && (
+                    <div className="sidebar-subgroup-title">
+                      <span>RECENT</span>
+                    </div>
+                  )}
+                  <div className="sidebar-subgroup-items">
+                    {unpinnedConversations.map(renderSidebarConversationRow)}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Upgrade to Pro Card */}
-        <div className="upgrade-pro-card">
-          <div className="upgrade-card-header">
-            <span className="upgrade-card-title">Upgrade to Pro</span>
-            <Sparkles size={14} className="upgrade-sparkle-icon" />
-          </div>
-          <p className="upgrade-card-desc">
-            Unlock more power, more models, and more possibilities.
-          </p>
-          <button 
-            className="upgrade-card-btn" 
-            onClick={() => {
-              if (onOpenProfileModal) onOpenProfileModal();
-              if (window.innerWidth < 960 && onClose) onClose();
-            }}
-          >
-            Upgrade Now
-          </button>
+      {/* Upgrade to Pro Card */}
+      <div className="upgrade-pro-card">
+        <div className="upgrade-card-header">
+          <span className="upgrade-card-title">Upgrade to Pro</span>
+          <Sparkles size={14} className="upgrade-sparkle-icon" />
         </div>
+        <p className="upgrade-card-desc">
+          Unlock more power, more models, and more possibilities.
+        </p>
+        <button 
+          className="upgrade-card-btn" 
+          onClick={() => {
+            if (onOpenProfileModal) onOpenProfileModal();
+          }}
+        >
+          Upgrade Now
+        </button>
+      </div>
 
-        {/* Bottom User Profile Section (Interactive Gopi Profile) */}
-        <div className="sidebar-user-footer">
-          <div 
-            id="sidebar-user-profile-row"
-            className="user-profile-row user-profile-interactive"
-            onClick={() => {
-              if (onOpenProfileModal) onOpenProfileModal();
-              if (window.innerWidth < 960 && onClose) onClose();
-            }}
-            title="Click to view Gopi Account & Profile Settings"
-          >
-            <div className="user-avatar-initials">
-              <span>{userInitials}</span>
-            </div>
-            <div className="user-name-wrapper">
-              <span className="user-display-name">{userName}</span>
-              <span className="user-role-tag">Pro Member</span>
-            </div>
-            <ChevronDown size={16} className="user-chevron-icon" />
+      {/* Bottom User Profile Section (Interactive Gopi Profile) */}
+      <div className="sidebar-user-footer">
+        <div 
+          id="sidebar-user-profile-row"
+          className="user-profile-row user-profile-interactive"
+          onClick={() => {
+            if (onOpenProfileModal) onOpenProfileModal();
+          }}
+          title="Click to view Gopi Account & Profile Settings"
+        >
+          <div className="user-avatar-initials">
+            <span>{userInitials}</span>
           </div>
+          <div className="user-name-wrapper">
+            <span className="user-display-name">{userName}</span>
+            <span className="user-role-tag">Pro Member</span>
+          </div>
+          <ChevronDown size={16} className="user-chevron-icon" />
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 }

@@ -850,21 +850,36 @@ export default function App() {
 
   return (
     <div className={`aurqo-app-root theme-${theme}`}>
-      {/* 1. AURQO Ecosystem Sidebar matching exact reference */}
+      {/* 1. THAMILI Ecosystem Sidebar (Docked on desktop, Off-canvas drawer on mobile) */}
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         userName={userName}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectSavedConversation}
-        onNewConversation={handleNewConversation}
+        onSelectConversation={(conv) => {
+          handleSelectSavedConversation(conv);
+          setIsSidebarOpen(false);
+        }}
+        onNewConversation={() => {
+          handleNewConversation();
+          setIsSidebarOpen(false);
+        }}
         onNavigate={(section) => {
           if (section !== 'ai_audio') {
             alert(`${section.toUpperCase()} is part of the THAMILI Platform ecosystem. You are currently in the dedicated AI Audio / Audio Generator module.`);
           }
         }}
       />
+
+      {/* Mobile Sidebar Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-backdrop active" 
+          onClick={() => setIsSidebarOpen(false)} 
+          aria-hidden="true"
+        />
+      )}
 
       {/* 2. Main Platform Layout Container */}
       <div className="aurqo-main-layout">
@@ -926,7 +941,11 @@ export default function App() {
               </div>
 
               {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
-              <AudioVisualizer state={aiState} />
+              <AudioVisualizer 
+                state={aiState} 
+                isListening={aiState === 'listening'} 
+                isSpeaking={aiState === 'speaking'} 
+              />
 
               {/* Real-time Status Caption with localized prompt & active state guidance */}
               <VoiceStatus

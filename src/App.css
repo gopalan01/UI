@@ -170,27 +170,31 @@ button:focus-visible {
 }
 
 /* --------------------------------------------------------------------------
-   4. EXACT AURQO SIDEBAR MENU BAR (Permanent Docked Sidebar on Desktop)
+   4. THAMILI PERMANENT DOCKED SIDEBAR MENU (Always Visible & Accessible)
    -------------------------------------------------------------------------- */
 .aurqo-sidebar {
   position: relative;
-  width: 260px;
-  min-width: 260px;
-  max-width: 260px;
+  top: 0;
+  left: 0;
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
   height: 100vh;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-sidebar);
   display: flex;
   flex-direction: column;
   padding: 20px 14px 16px 14px;
-  z-index: 20;
+  z-index: 50;
   transform: none;
   box-shadow: none;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .aurqo-sidebar.sidebar-open {
   transform: none;
+  box-shadow: none;
 }
 
 .sidebar-backdrop {
@@ -200,9 +204,8 @@ button:focus-visible {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-left: 8px;
-  padding-bottom: 20px;
+  justify-content: flex-start;
+  padding: 4px 6px 14px 6px;
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 12px;
 }
@@ -210,16 +213,19 @@ button:focus-visible {
 .brand-logo-container {
   display: flex;
   align-items: center;
-  height: 44px;
-  overflow: hidden;
+  height: 52px;
+  width: 100%;
+  overflow: visible;
   border-radius: 8px;
 }
 
 .aurqo-brand-logo,
 .thamili-brand-logo {
   height: 100%;
-  max-width: 170px;
+  max-height: 52px;
+  max-width: 195px;
   object-fit: contain;
+  object-position: left center;
   border-radius: 6px;
   color: var(--logo-text-color);
   transition: transform var(--transition-fast);
@@ -230,7 +236,7 @@ button:focus-visible {
 }
 
 .sidebar-close-btn {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 34px;
@@ -413,30 +419,40 @@ button:focus-visible {
 .sidebar-history-heading-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .sidebar-history-icon {
-  color: var(--aurqo-cyan);
+  color: var(--aurqo-primary);
 }
 
 .sidebar-history-title {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #000000;
   text-transform: uppercase;
   margin: 0;
 }
 
+[data-theme='dark'] .sidebar-history-title,
+.theme-dark .sidebar-history-title {
+  color: #ffffff;
+}
+
 .sidebar-history-count-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
   border-radius: 10px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  color: #000000;
+}
+
+[data-theme='dark'] .sidebar-history-count-badge,
+.theme-dark .sidebar-history-count-badge {
+  color: #ffffff;
 }
 
 .sidebar-history-list {
@@ -897,7 +913,7 @@ button:focus-visible {
 }
 
 .header-menu-toggle-btn {
-  display: none; /* Hidden on desktop since sidebar menu is always visible */
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
@@ -3439,49 +3455,12 @@ button:focus-visible {
 
 /* Tablets Portrait & Small Laptops (768px - 959px) */
 @media (max-width: 959px) {
-  .aurqo-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 270px;
-    max-width: 85vw;
-    z-index: 200;
-    transform: translateX(-100%);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
-    box-shadow: none;
-  }
-
-  .aurqo-sidebar.sidebar-open {
-    transform: translateX(0);
-    box-shadow: 0 0 60px rgba(0, 0, 0, 0.45);
-  }
-
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    z-index: 190;
-    animation: modal-fade 0.25s ease-out;
-  }
-
-  .sidebar-close-btn {
-    display: flex;
-  }
-
-  .header-menu-toggle-btn {
-    display: flex;
-  }
-
   .conversation-panel-wrapper {
     display: none;
   }
 
   .header-three-dots-btn {
-    display: inline-flex;
+    display: inline-flex !important;
   }
 }
 
@@ -6122,15 +6101,17 @@ button:focus-visible {
 .clean-selection-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
-  border-radius: 9px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 11px;
   background: var(--bg-surface, #1e222d);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   color: var(--text-primary, #f8fafc);
   font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
+  min-width: 0;
+  box-sizing: border-box;
   transition: all 0.15s ease;
 }
 
@@ -6145,6 +6126,117 @@ button:focus-visible {
   border-color: var(--aurqo-primary, #6366f1);
   box-shadow: 0 0 10px rgba(91, 63, 255, 0.3);
   font-weight: 600;
+}
+
+/* Chip Text & Subtitle Content Wrapper (Prevents Text Overflow & Clipping) */
+.chip-text-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.chip-label-primary {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.25;
+}
+
+.chip-label-sub {
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+.chip-emoji-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.chip-check {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.chip-badge-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(91, 63, 255, 0.2);
+  color: var(--aurqo-primary, #a5b4fc);
+  border: 1px solid rgba(91, 63, 255, 0.35);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Specific Step 4 Voice Grid */
+.voice-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.chip-voice {
+  padding: 9px 12px;
+  min-height: 48px;
+  border-radius: 12px;
+  background: var(--bg-surface, #1e222d);
+  border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.chip-voice:hover {
+  border-color: rgba(91, 63, 255, 0.4);
+  background: var(--bg-card-hover, #252a37);
+}
+
+.chip-voice.selected-chip {
+  background: linear-gradient(135deg, rgba(91, 63, 255, 0.22) 0%, rgba(0, 210, 255, 0.12) 100%);
+  border-color: var(--aurqo-primary, #6366f1);
+  box-shadow: 0 0 14px rgba(91, 63, 255, 0.35);
+}
+
+/* Specific Step 5 Emotion Tone Grid */
+.emotion-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 7px;
+  width: 100%;
+}
+
+.chip-emotion {
+  padding: 8px 10px;
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--bg-surface, #1e222d);
+  border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.chip-emotion:hover {
+  border-color: rgba(91, 63, 255, 0.4);
+  background: var(--bg-card-hover, #252a37);
+}
+
+.chip-emotion.selected-chip {
+  background: linear-gradient(135deg, rgba(91, 63, 255, 0.22) 0%, rgba(236, 72, 153, 0.15) 100%);
+  border-color: var(--aurqo-primary, #6366f1);
+  box-shadow: 0 0 12px rgba(91, 63, 255, 0.35);
 }
 
 .chip-summary {
@@ -6472,28 +6564,826 @@ button:focus-visible {
   box-shadow: 0 -1px 6px currentColor;
 }
 
-@media (max-width: 600px) {
-  .neat-speed-buttons-row {
-    grid-template-columns: 1fr;
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM (Phone View Alignment & Clean Layout)
+   ========================================================================== */
+
+/* 1. Base Mobile Toggle Buttons & Overlay Defaults */
+.mobile-sidebar-toggle-btn {
+  display: none;
+}
+
+.sidebar-mobile-close-btn {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(8, 10, 20, 0.68);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile Voice Conversation Drawer */
+.mobile-chat-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(8, 10, 20, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeInDrawerBackdrop 0.25s ease;
+}
+
+.mobile-chat-drawer-content {
+  width: 100%;
+  max-width: 540px;
+  height: 85vh;
+  height: 85dvh;
+  max-height: 85vh;
+  background: var(--bg-surface-elevated, #131738);
+  border-radius: 24px 24px 0 0;
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.15));
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
+  animation: slideUpMobileDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-drawer-top-handle {
+  width: 100%;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: var(--bg-surface, #0d1127);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.mobile-drawer-drag-pill {
+  width: 42px;
+  height: 4.5px;
+  border-radius: 4px;
+  background: var(--border-strong, rgba(255, 255, 255, 0.3));
+}
+
+.aurqo-chat-panel.drawer-mode {
+  height: calc(100% - 22px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+@keyframes fadeInDrawerBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUpMobileDrawer {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   TABLET BREAKPOINT (max-width: 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .conversation-panel-wrapper {
+    width: 320px;
+    min-width: 320px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   LARGE MOBILE / TABLET PORTRAIT BREAKPOINT (max-width: 992px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .aurqo-app-root {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .aurqo-main-layout {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Off-canvas Mobile Sidebar */
+  .aurqo-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 290px;
+    max-width: 82vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 1200;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-sidebar);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.55);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .aurqo-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .mobile-sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-sidebar);
+    color: var(--text-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+  }
+
+  .mobile-sidebar-toggle-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--aurqo-primary);
+    border-color: var(--aurqo-primary);
+  }
+
+  .sidebar-mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    border-radius: 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .sidebar-mobile-close-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--aurqo-crimson);
+  }
+
+  /* Right Conversation Panel is hidden on mobile flow (Accessible via ⋮ 3-dot drawer) */
+  .conversation-panel-wrapper {
+    display: none !important;
+  }
+
+  .fixed-center-stage {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px 28px 14px;
+  }
+
+  .fixed-stage-inner {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   STANDARD MOBILE / PHONE VIEW BREAKPOINT (max-width: 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Header Compact Alignment */
+  .aurqo-header {
+    padding: 8px 12px;
+    min-height: 54px;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    gap: 8px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .module-title-wrapper {
+    min-width: 0;
+  }
+
+  .module-tag-row {
     gap: 6px;
+    margin-bottom: 1px;
+  }
+
+  .module-badge-primary {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .module-status-dot {
+    font-size: 8px;
+    gap: 3px;
+  }
+
+  .pulse-circle {
+    width: 5px;
+    height: 5px;
+  }
+
+  .header-main-title {
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+    line-height: 1.2;
+  }
+
+  /* Hide center pills in header on mobile to prevent squishing */
+  .header-center-pills {
+    display: none !important;
+  }
+
+  .header-right {
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .header-get-started-btn {
+    display: none !important;
+  }
+
+  .header-user-btn {
+    padding: 3px 6px;
+    gap: 4px;
+    border-radius: 16px;
+  }
+
+  .header-user-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .header-user-name {
+    display: none;
+  }
+
+  .header-user-pro-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+
+  .header-theme-btn,
+  .header-action-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .three-dots-badge {
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 8.5px;
+  }
+
+  /* Content Body & Center Stage */
+  .aurqo-content-body {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .fixed-center-stage {
+    padding: 8px 10px 24px 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .fixed-stage-inner {
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+  }
+
+  .hero-badge-title {
+    font-size: 15px;
+    letter-spacing: -0.2px;
+  }
+
+  /* Symmetrical Dual-Core Hero Row */
+  .hero-interactive-row {
+    width: 100%;
+    max-width: 100%;
+    gap: 8px;
+    padding: 2px 0;
+    justify-content: center;
+    align-items: center;
+    margin: 2px 0;
+  }
+
+  .ai-character-container,
+  .central-mic-container {
+    width: 116px;
+    height: 116px;
+    min-width: 100px;
+  }
+
+  .ai-character-orb,
+  .mic-interactive-stage {
+    width: 80px;
+    height: 80px;
+  }
+
+  .orb-core,
+  .central-mic-button {
+    width: 70px;
+    height: 70px;
+  }
+
+  .quantum-gyro-frame {
+    width: 94px;
+    height: 94px;
+  }
+
+  .axis-lat {
+    width: 88px;
+    height: 44px;
+  }
+
+  .axis-long {
+    width: 44px;
+    height: 88px;
+  }
+
+  .axis-diagonal {
+    width: 90px;
+    height: 90px;
+  }
+
+  .prismatic-shards-layer {
+    width: 100px;
+    height: 100px;
+  }
+
+  .center-svg-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mic-svg-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mic-speaking-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mic-stop-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mic-action-caption {
+    font-size: 9px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  .hero-connection-bridge {
+    width: 28px;
+    height: 22px;
+    min-width: 22px;
+  }
+
+  .bridge-icon {
+    width: 9px;
+    height: 9px;
+  }
+
+  .ai-state-badge,
+  .mic-state-badge {
+    font-size: 8px;
+    padding: 2px 6px;
+    letter-spacing: 0.3px;
+    margin-top: 4px;
+  }
+
+  /* Audio Visualizer */
+  .audio-visualizer-container {
+    width: 100%;
+    max-width: 100%;
+    height: 48px;
+    margin: 2px 0;
+  }
+
+  .visualizer-canvas-container {
+    height: 48px;
+  }
+
+  /* Voice Status */
+  .voice-status-container {
+    padding: 4px 6px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .status-caption-text {
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .status-badge-live {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  /* Neat Voice Studio Card */
+  .neat-voice-studio-card {
+    padding: 10px 8px;
+    border-radius: 12px;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .studio-navbar-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding-bottom: 5px;
+  }
+
+  .stepper-breadcrumbs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    gap: 4px;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  .stepper-breadcrumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .breadcrumb-pill {
+    flex-shrink: 0;
+    padding: 3px 7px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
+
+  .breadcrumb-title {
+    font-size: 10px;
+  }
+
+  .breadcrumb-val {
+    font-size: 9px;
+  }
+
+  .studio-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .studio-action-button {
+    justify-content: center;
+    padding: 5px 8px;
+    font-size: 10.5px;
+    border-radius: 7px;
+    width: 100%;
+  }
+
+  .step-selection-header-row {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 10.5px;
+  }
+
+  .step-indicator-tag {
+    font-size: 8.5px;
+    padding: 1px 5px;
+  }
+
+  .selection-label {
+    font-size: 10.5px;
+  }
+
+  .chips-wrap-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    width: 100%;
+  }
+
+  .clean-selection-chip {
+    padding: 6px 8px;
+    font-size: 10.5px;
+    min-height: 36px;
+    border-radius: 9px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Step 4 Voice Selection Grid on Phone View: Female & Male side-by-side, Clone full width */
+  .voice-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .chip-voice {
+    padding: 8px 10px;
+    min-height: 46px;
+    border-radius: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chip-voice.chip-voice-user {
+    grid-column: 1 / -1;
+  }
+
+  /* Step 5 Tone Selection Grid on Phone View: Perfectly aligned 2-column cards */
+  .emotion-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .chip-emotion {
+    padding: 7px 9px;
+    min-height: 42px;
+    border-radius: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chip-flag-icon {
+    font-size: 13px;
+  }
+
+  .chip-label-primary {
+    font-size: 11px;
+  }
+
+  .chip-label-sub {
+    font-size: 9px;
+  }
+
+  .studio-prompts-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-top: 5px;
+  }
+
+  .prompts-intro {
+    font-size: 9.5px;
+  }
+
+  .prompts-pills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .quick-action-pill {
+    font-size: 9.5px;
+    padding: 3px 7px;
+    border-radius: 6px;
+  }
+
+  /* Compact Speech Speed Controls (3-Column Grid) */
+  .neat-speed-box {
+    padding: 8px 10px;
+    gap: 6px;
+    margin-top: 6px;
+    border-radius: 12px;
+  }
+
+  .neat-speed-header {
+    gap: 6px;
+  }
+
+  .neat-speed-icon-box {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .neat-speed-label {
+    font-size: 11px;
+  }
+
+  .neat-speed-sublabel {
+    font-size: 8.5px;
+  }
+
+  .neat-speed-status-badge {
+    font-size: 9.5px;
+    padding: 2px 7px;
+  }
+
+  .neat-speed-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+    width: 100%;
   }
 
   .neat-speed-btn {
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 8px 12px;
+    padding: 6px 2px;
+    border-radius: 8px;
+    gap: 2px;
   }
 
   .speed-btn-top {
-    width: auto;
+    gap: 3px;
   }
 
-  .speed-btn-body {
-    flex-direction: row;
+  .speed-btn-emoji {
+    font-size: 13px;
+  }
+
+  .speed-btn-multiplier {
+    font-size: 8.5px;
+    padding: 1px 3px;
+    border-radius: 3px;
+  }
+
+  .speed-btn-title {
+    font-size: 10px;
+  }
+
+  .speed-btn-native {
+    font-size: 8px;
+  }
+
+  .speed-btn-badge-default {
+    display: none;
+  }
+
+  /* Modals on Phone View */
+  .modal-content-card,
+  .user-profile-modal-card,
+  .compact-lang-modal-card,
+  .voice-upload-card,
+  .dialect-modal-card {
+    width: 94vw;
+    max-width: 440px;
+    max-height: 88vh;
+    max-height: 88dvh;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .compact-languages-grid {
+    grid-template-columns: 1fr;
     gap: 6px;
-    align-items: center;
   }
 }
+
+/* --------------------------------------------------------------------------
+   SMALL PHONE VIEW BREAKPOINT (max-width: 390px - iPhone 12/13/14/15/SE)
+   -------------------------------------------------------------------------- */
+@media (max-width: 390px) {
+  .header-main-title {
+    max-width: 105px;
+    font-size: 12.5px;
+  }
+
+  .hero-interactive-row {
+    gap: 4px;
+  }
+
+  .ai-character-container,
+  .central-mic-container {
+    width: 100px;
+    height: 100px;
+    min-width: 92px;
+  }
+
+  .ai-character-orb,
+  .mic-interactive-stage {
+    width: 72px;
+    height: 72px;
+  }
+
+  .orb-core,
+  .central-mic-button {
+    width: 62px;
+    height: 62px;
+  }
+
+  .hero-connection-bridge {
+    width: 22px;
+    min-width: 18px;
+  }
+
+  .chips-wrap-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .clean-selection-chip {
+    padding: 5px 6px;
+    font-size: 9.5px;
+  }
+
+  .voice-selection-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .chip-voice {
+    padding: 6px 7px;
+    min-height: 42px;
+    gap: 5px;
+  }
+
+  .chip-voice .chip-emoji-icon {
+    font-size: 15px;
+  }
+
+  .chip-voice .chip-label-primary {
+    font-size: 10.5px;
+  }
+
+  .chip-voice .chip-label-sub {
+    font-size: 8.5px;
+  }
+
+  .emotion-selection-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .chip-emotion {
+    padding: 6px 7px;
+    min-height: 40px;
+    gap: 5px;
+  }
+
+  .chip-emotion .chip-emoji-icon {
+    font-size: 14px;
+  }
+
+  .chip-emotion .chip-label-primary {
+    font-size: 10px;
+  }
+
+  .chip-emotion .chip-label-sub {
+    font-size: 8px;
+  }
+
+  .chip-label-primary {
+    font-size: 9.5px;
+  }
+
+  .chip-label-sub {
+    font-size: 8px;
+  }
+}
+
 
 
 

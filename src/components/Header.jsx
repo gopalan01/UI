@@ -1,12 +1,12 @@
 import React from 'react';
 import { 
   Sun, 
-  Menu, 
   Volume2, 
   VolumeX, 
   Radio,
   ChevronDown,
-  MoreVertical
+  MoreVertical,
+  Menu
 } from 'lucide-react';
 import { 
   SUPPORTED_LANGUAGES, 
@@ -43,17 +43,16 @@ export default function Header({
 
   return (
     <header className="aurqo-header">
-      {/* Left: 3-line Menu Button + Active Module Info */}
+      {/* Left: Active Module Info + Mobile Menu Toggle */}
       <div className="header-left">
-        <button 
-          id="header-sidebar-menu-btn"
-          className="header-menu-toggle-btn" 
+        <button
+          type="button"
+          className="mobile-sidebar-toggle-btn"
           onClick={onToggleSidebar}
-          aria-label="Open Navigation Menu"
-          title="Open Navigation Menu (Touch / Click to view all tools & features)"
+          title="Open Menu & History"
+          aria-label="Toggle Sidebar Menu"
         >
-          <Menu size={22} className="menu-icon-bars" />
-          <span className="menu-btn-label">Menu</span>
+          <Menu size={20} />
         </button>
 
         <div className="module-title-wrapper">
