@@ -118,6 +118,7 @@ export default function App() {
   const [isCompactChangeLangOpen, setIsCompactChangeLangOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+  const [isVoicePanelCollapsed, setIsVoicePanelCollapsed] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [activePlayingIndex, setActivePlayingIndex] = useState(null);
 
@@ -970,7 +971,10 @@ export default function App() {
           </section>
 
           {/* RIGHT CONVERSATION PANEL */}
-          <aside className="conversation-panel-wrapper" aria-label="Voice Conversation History">
+          <aside 
+            className={`conversation-panel-wrapper ${isVoicePanelCollapsed ? 'is-collapsed' : 'is-expanded'}`} 
+            aria-label="Voice Conversation History"
+          >
             <ConversationPanel
               messages={messages}
               onClearHistory={handleClearHistory}
@@ -980,6 +984,8 @@ export default function App() {
               currentLanguage={config.language}
               currentSlang={currentSlangObj.name}
               onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
+              isCollapsed={isVoicePanelCollapsed}
+              onToggleCollapse={() => setIsVoicePanelCollapsed((prev) => !prev)}
             />
           </aside>
         </main>
