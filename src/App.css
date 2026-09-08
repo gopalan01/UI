@@ -202,9 +202,10 @@ button:focus-visible {
 }
 
 .sidebar-brand {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 4px 6px 14px 6px;
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 12px;
@@ -213,10 +214,12 @@ button:focus-visible {
 .brand-logo-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 52px;
   width: 100%;
   overflow: visible;
   border-radius: 8px;
+  text-align: center;
 }
 
 .aurqo-brand-logo,
@@ -225,7 +228,8 @@ button:focus-visible {
   max-height: 52px;
   max-width: 195px;
   object-fit: contain;
-  object-position: left center;
+  object-position: center center;
+  margin: 0 auto;
   border-radius: 6px;
   color: var(--logo-text-color);
   transition: transform var(--transition-fast);
@@ -837,6 +841,26 @@ button:focus-visible {
 .upgrade-card-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(91, 63, 255, 0.35);
+}
+
+/* Upgrade to Pro Card Auto-Hide Smooth Fade-out */
+.upgrade-card-fade-out {
+  opacity: 0 !important;
+  transform: translateY(-8px) scale(0.96) !important;
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-width: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              border-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden !important;
 }
 
 /* Sidebar User Footer */
@@ -2013,16 +2037,19 @@ button:focus-visible {
 .audio-visualizer-wrapper {
   width: 100%;
   max-width: 440px;
-  height: 32px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0;
+  margin: 4px 0 2px 0;
+  position: relative;
+  pointer-events: none;
 }
 
 .audio-visualizer-canvas {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
 /* --------------------------------------------------------------------------
@@ -5923,19 +5950,158 @@ button:focus-visible {
 }
 
 /* ==========================================================================
-   NEAT VOICE STUDIO CARD & STEPPER (Step 1-5 + Ready State)
+   VOICE & LANGUAGE SETTINGS – SINGLE COLLAPSIBLE CONTAINER
+   ========================================================================== */
+
+.voice-language-collapsible-wrapper {
+  width: 100%;
+  margin-top: 14px;
+  background: var(--bg-surface-elevated, #161a23);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.voice-language-collapsible-wrapper:hover {
+  border-color: rgba(91, 63, 255, 0.3);
+}
+
+/* 1. Header: Single Header for Whole Section with One Top-Right Arrow */
+.collapsible-settings-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary, #f8fafc);
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.collapsible-settings-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.collapsible-settings-header.header-expanded {
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.07));
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.settings-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-header-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(91, 63, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--aurqo-primary, #818cf8);
+  flex-shrink: 0;
+}
+
+.settings-header-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+}
+
+.settings-header-summary-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted, #94a3b8);
+  padding: 2px 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+/* ONE small, neat dropdown arrow at the TOP-RIGHT corner of the whole container */
+.settings-header-arrow-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary, #cbd5e1);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.collapsible-settings-header:hover .settings-header-arrow-wrap {
+  background: rgba(91, 63, 255, 0.2);
+  border-color: rgba(91, 63, 255, 0.4);
+  color: var(--aurqo-primary, #a5b4fc);
+  transform: translateY(-1px);
+}
+
+.settings-header-arrow-glyph {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: bold;
+}
+
+/* 2. Expandable Body with 250-350ms smooth transition */
+.collapsible-settings-body {
+  transition: max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: max-height, opacity;
+}
+
+.collapsible-settings-body.body-collapsed {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.collapsible-settings-body.body-expanded {
+  max-height: 1200px !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+
+/* ==========================================================================
+   NEAT VOICE STUDIO CARD & STEPPER (Inside Collapsible Section)
    ========================================================================== */
 
 .neat-voice-studio-card {
   width: 100%;
-  background: var(--bg-surface-elevated, #161a23);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 14px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
   position: relative;
   z-index: 5;
 }
@@ -6128,7 +6294,7 @@ button:focus-visible {
   font-weight: 600;
 }
 
-/* Chip Text & Subtitle Content Wrapper (Prevents Text Overflow & Clipping) */
+/* Chip Text & Subtitle Content Wrapper */
 .chip-text-content {
   display: flex;
   flex-direction: column;
@@ -6137,7 +6303,6 @@ button:focus-visible {
   flex: 1;
   text-align: left;
   gap: 1px;
-  overflow: hidden;
 }
 
 .chip-label-primary {
@@ -6185,20 +6350,26 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-/* Specific Step 4 Voice Grid */
+/* ==========================================================================
+   SPECIFIC STEP 4: VOICE GRID (Strictly 3 options: Male, Female, Own Voice)
+   100% full visibility, no clipping, no cutting off
+   ========================================================================== */
 .voice-selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   width: 100%;
 }
 
 .chip-voice {
-  padding: 9px 12px;
-  min-height: 48px;
+  padding: 10px 14px;
+  min-height: 52px;
   border-radius: 12px;
   background: var(--bg-surface, #1e222d);
   border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .chip-voice:hover {
@@ -6212,20 +6383,48 @@ button:focus-visible {
   box-shadow: 0 0 14px rgba(91, 63, 255, 0.35);
 }
 
-/* Specific Step 5 Emotion Tone Grid */
+.chip-voice-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 100% text visibility for Voice Options */
+.chip-voice .chip-label-primary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   SPECIFIC STEP 5: TONE GRID (Zero emojis, static UI icons, localized labels)
+   ========================================================================== */
 .emotion-selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
   width: 100%;
 }
 
 .chip-emotion {
-  padding: 8px 10px;
-  min-height: 44px;
+  padding: 8px 12px;
+  min-height: 46px;
   border-radius: 11px;
   background: var(--bg-surface, #1e222d);
   border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .chip-emotion:hover {
@@ -6237,6 +6436,43 @@ button:focus-visible {
   background: linear-gradient(135deg, rgba(91, 63, 255, 0.22) 0%, rgba(236, 72, 153, 0.15) 100%);
   border-color: var(--aurqo-primary, #6366f1);
   box-shadow: 0 0 12px rgba(91, 63, 255, 0.35);
+}
+
+.chip-tone-icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Static, non-animated SVG UI icons */
+.tone-ui-icon {
+  flex-shrink: 0;
+}
+
+.tone-icon-default { color: #818cf8; }
+.tone-icon-happy { color: #f59e0b; }
+.tone-icon-sad { color: #38bdf8; }
+.tone-icon-husky { color: #c084fc; }
+.tone-icon-excitement { color: #fbbf24; }
+.tone-icon-calm { color: #34d399; }
+.tone-icon-romantic { color: #f472b6; }
+.tone-icon-bold { color: #f87171; }
+
+/* 100% text visibility for Tone Options */
+.chip-emotion .chip-label-primary {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .chip-summary {
@@ -6734,18 +6970,22 @@ button:focus-visible {
   }
 
   .sidebar-mobile-close-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
-    margin-left: auto;
     border-radius: 8px;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     color: var(--text-muted);
     cursor: pointer;
     transition: all var(--transition-fast);
+    z-index: 2;
   }
 
   .sidebar-mobile-close-btn:hover {
@@ -7331,56 +7571,44 @@ button:focus-visible {
 
   .voice-selection-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 5px;
+    gap: 6px;
   }
 
   .chip-voice {
-    padding: 6px 7px;
-    min-height: 42px;
-    gap: 5px;
+    padding: 7px 9px;
+    min-height: 46px;
+    gap: 6px;
   }
 
-  .chip-voice .chip-emoji-icon {
-    font-size: 15px;
+  .chip-voice.chip-voice-user {
+    grid-column: 1 / -1;
   }
 
   .chip-voice .chip-label-primary {
-    font-size: 10.5px;
-  }
-
-  .chip-voice .chip-label-sub {
-    font-size: 8.5px;
+    font-size: 11px;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.25;
   }
 
   .emotion-selection-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 5px;
+    gap: 6px;
   }
 
   .chip-emotion {
-    padding: 6px 7px;
-    min-height: 40px;
-    gap: 5px;
-  }
-
-  .chip-emotion .chip-emoji-icon {
-    font-size: 14px;
+    padding: 7px 8px;
+    min-height: 44px;
+    gap: 6px;
   }
 
   .chip-emotion .chip-label-primary {
-    font-size: 10px;
-  }
-
-  .chip-emotion .chip-label-sub {
-    font-size: 8px;
-  }
-
-  .chip-label-primary {
-    font-size: 9.5px;
-  }
-
-  .chip-label-sub {
-    font-size: 8px;
+    font-size: 10.5px;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.25;
   }
 }
 

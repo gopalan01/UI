@@ -12,12 +12,114 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const LOCALIZED_UPLOAD_TEXTS = {
+  tamil: {
+    heading: 'உங்கள் குரல் மாதிரியை இழுத்து விடவும்',
+    sub: 'அல்லது கணினியிலிருந்து தேர்ந்தெடுக்க கிளிக் செய்யவும்',
+    limit: 'அதிகபட்ச அளவு: 25MB • 10-60 வினாடிகள் பரிந்துரைக்கப்படுகிறது',
+    title: 'உங்கள் சொந்த குரலை பதிவேற்றவும்',
+    subtitle: 'ஏஐ குரல் உருவாக்கத்திற்கு உங்கள் குரல் மாதிரியை பதிவேற்றவும்'
+  },
+  malayalam: {
+    heading: 'നിങ്ങളുടെ ശബ്ദ സാമ്പിൾ ഇവിടെ ഡ്രാഗ് ചെയ്യുക',
+    sub: 'അല്ലെങ്കിൽ കമ്പ്യൂട്ടറിൽ നിന്ന് തിരഞ്ഞെടുക്കാൻ ക്ലിക്ക് ചെയ്യുക',
+    limit: 'പരമാവധി വലുപ്പം: 25MB • 10-60 സെക്കൻഡ് ശുപാർശ ചെയ്യുന്നു',
+    title: 'നിങ്ങളുടെ സ്വന്തം ശബ്ദം അപ്‌ലോഡ് ചെയ്യുക',
+    subtitle: 'എഐ ശബ്ദ നിർമ്മാണത്തിനായി നിങ്ങളുടെ ശബ്ദ സാമ്പിൾ നൽകുക'
+  },
+  hindi: {
+    heading: 'अपना वॉइस सैंपल यहाँ खींचें और छोड़ें',
+    sub: 'या अपने कंप्यूटर से चुनने के लिए क्लिक करें',
+    limit: 'अधिकतम आकार: 25MB • 10-60 सेकंड अनुशंसित',
+    title: 'अपनी खुद की आवाज़ अपलोड करें',
+    subtitle: 'एआई वॉयस सिंथेसिस के लिए अपने ऑडियो का सैंपल दें'
+  },
+  telugu: {
+    heading: 'మీ వాయిస్ నమూనాను ఇక్కడ లాగి వదలండి',
+    sub: 'లేదా కంప్యూటర్ నుండి ఎంచుకోవడానికి క్లిక్ చేయండి',
+    limit: 'గరిష్ట పరిమాణం: 25MB • 10-60 సెకన్లు సిఫార్సు చేయబడింది',
+    title: 'మీ స్వంత వాయిస్ అప్‌లోడ్ చేయండి',
+    subtitle: 'ఏఐ వాయిస్ సంశ్లేషణ కోసం మీ వాయిస్ నమూనాను అందించండి'
+  },
+  kannada: {
+    heading: 'ನಿಮ್ಮ ಧ್ವನಿ ಮಾದರಿಯನ್ನು ಇಲ್ಲಿ ಎಳೆಯಿರಿ ಮತ್ತು ಬಿಡಿ',
+    sub: 'ಅಥವಾ ಕಂಪ್ಯೂಟರ್‌ನಿಂದ ಆಯ್ಕೆ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ',
+    limit: 'ಗರಿಷ್ಠ ಗಾತ್ರ: 25MB • 10-60 ಸೆಕೆಂಡುಗಳು ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ',
+    title: 'ನಿಮ್ಮ ಸ್ವಂತ ಧ್ವನಿಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+    subtitle: 'ಎಐ ಧ್ವನಿ ಸಂಶ್ಲೇಷಣೆಗಾಗಿ ನಿಮ್ಮ ಧ್ವನಿ ಮಾದರಿಯನ್ನು ಒದಗಿಸಿ'
+  },
+  bengali: {
+    heading: 'আপনার ভয়েস নমুনা এখানে টেনে এনে ফেলুন',
+    sub: 'অথবা কম্পিউটার থেকে বেছে নিতে ক্লিক করুন',
+    limit: 'সর্বোচ্চ সাইজ: 25MB • ১০-৬০ সেকেন্ড প্রস্তাবিত',
+    title: 'আপনার নিজস্ব কণ্ঠস্বর আপলোড করুন',
+    subtitle: 'এআই ভয়েস সংশ্লেষণের জন্য আপনার অডিও নমুনা দিন'
+  },
+  marathi: {
+    heading: 'तुमचा व्हॉइस सॅम्पल येथे ड्रॅग आणि ड्रॉप करा',
+    sub: 'किंवा कॉम्प्युटरवरून निवडण्यासाठी क्लिक करा',
+    limit: 'कमाल आकार: 25MB • 10-60 सेकंद शिफारस केलेले',
+    title: 'तुमचा स्वतःचा आवाज अपलोड करा',
+    subtitle: 'एआय व्हॉइससाठी तुमचा ऑडिओ नमुना द्या'
+  },
+  gujarati: {
+    heading: 'તમારો વૉઇસ નમૂનો અહીં ખેંચો અને મૂકો',
+    sub: 'અથવા તમારા કમ્પ્યુટરમાંથી પસંદ કરવા ક્લિક કરો',
+    limit: 'મહત્તમ કદ: 25MB • 10-60 સેકન્ડ ભલામણ કરેલ',
+    title: 'તમારો પોતાનો અવાજ અપલોડ કરો',
+    subtitle: 'એઆઈ વૉઇસ સંશ્લેષણ માટે ઑડિયો નમૂનો આપો'
+  },
+  spanish: {
+    heading: 'Arrastra y suelta tu muestra de voz aquí',
+    sub: 'o haz clic para explorar desde tu computadora',
+    limit: 'Tamaño máximo: 25MB • 10-60 segundos recomendado',
+    title: 'SUBE TU PROPIA VOZ',
+    subtitle: 'Sube una muestra de voz para la síntesis de IA'
+  },
+  french: {
+    heading: 'Glissez et déposez votre échantillon vocal ici',
+    sub: 'ou cliquez pour parcourir depuis votre ordinateur',
+    limit: 'Taille maximale : 25Mo • 10-60 secondes recommandé',
+    title: 'TÉLÉVEREZ VOTRE PROPRE VOIX',
+    subtitle: 'Téléversez un échantillon pour la synthèse IA'
+  },
+  german: {
+    heading: 'Ziehen Sie Ihre Sprachprobe hierher',
+    sub: 'oder klicken Sie, um vom Computer auszuwählen',
+    limit: 'Maximale Größe: 25MB • 10-60 Sekunden empfohlen',
+    title: 'EIGENE STIMME HOCHLADEN',
+    subtitle: 'Laden Sie ein Sprachbeispiel für die KI-Synthese hoch'
+  },
+  japanese: {
+    heading: '音声サンプルをここにドラッグ＆ドロップ',
+    sub: 'またはクリックしてコンピューターから選択',
+    limit: '最大サイズ: 25MB • 10-60秒を推奨',
+    title: 'カスタム音声をアップロード',
+    subtitle: 'AI音声合成用のサンプルをアップロードしてください'
+  },
+  arabic: {
+    heading: 'اسحب عينة صوتك وأفلتها هنا',
+    sub: 'أو انقر للتصفح من جهاز الكمبيوتر الخاص بك',
+    limit: 'الحد الأقصى للحجم: 25 ميجابايت • يوصى بـ 10-60 ثانية',
+    title: 'تحميل صوتك الخاص',
+    subtitle: 'قم بتحميل عينة صوتية لتوليد صوت الذكاء الاصطناعي'
+  },
+  english: {
+    heading: 'Drag & drop your voice sample here',
+    sub: 'or click to browse from your computer',
+    limit: 'Maximum size: 25MB • 10-60 seconds recommended',
+    title: 'UPLOAD YOUR VOICE',
+    subtitle: 'Upload a short audio sample of your voice for AI synthesis'
+  }
+};
+
 export default function VoiceUploadModal({
   isOpen,
   onClose,
   uploadedFile,
   onSaveVoiceSample,
-  onRemoveVoiceSample
+  onRemoveVoiceSample,
+  currentLanguage = 'tamil'
 }) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(uploadedFile || null);
@@ -150,6 +252,8 @@ export default function VoiceUploadModal({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const uploadTexts = LOCALIZED_UPLOAD_TEXTS[currentLanguage] || LOCALIZED_UPLOAD_TEXTS.english;
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div 
@@ -165,8 +269,8 @@ export default function VoiceUploadModal({
               <UploadCloud size={20} />
             </div>
             <div>
-              <h3 className="modal-title">UPLOAD YOUR VOICE</h3>
-              <p className="modal-subtitle">Upload a short audio sample of your voice for AI synthesis</p>
+              <h3 className="modal-title">{uploadTexts.title}</h3>
+              <p className="modal-subtitle">{uploadTexts.subtitle}</p>
             </div>
           </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
@@ -203,8 +307,8 @@ export default function VoiceUploadModal({
               <div className="dropzone-icon-orb">
                 <UploadCloud size={34} />
               </div>
-              <h4 className="dropzone-heading">Drag & drop your voice sample here</h4>
-              <p className="dropzone-sub">or click to browse from your computer</p>
+              <h4 className="dropzone-heading">{uploadTexts.heading}</h4>
+              <p className="dropzone-sub">{uploadTexts.sub}</p>
               
               <div className="format-pills">
                 {acceptedFormats.map((fmt) => (
@@ -213,7 +317,7 @@ export default function VoiceUploadModal({
                   </span>
                 ))}
               </div>
-              <span className="file-size-limit">Maximum size: 25MB • 10-60 seconds recommended</span>
+              <span className="file-size-limit">{uploadTexts.limit}</span>
             </div>
           ) : (
             <div className="uploaded-file-preview-card">

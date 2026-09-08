@@ -35,10 +35,28 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState(null);
   const [editTitleText, setEditTitleText] = useState('');
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [showUpgradeCard, setShowUpgradeCard] = useState(true);
+  const [isUpgradeFading, setIsUpgradeFading] = useState(false);
   const editInputRef = useRef(null);
   const sidebarNavRef = useRef(null);
 
   const userInitials = userName.slice(0, 2).toUpperCase() || 'GP';
+
+  // Automatically hide Upgrade to Pro card after 5 seconds with smooth fade-out
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setIsUpgradeFading(true);
+    }, 4500);
+
+    const hideTimer = setTimeout(() => {
+      setShowUpgradeCard(false);
+    }, 5200);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
 
   // Load conversations and subscribe to real-time updates
   useEffect(() => {
@@ -396,24 +414,26 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Upgrade to Pro Card */}
-      <div className="upgrade-pro-card">
-        <div className="upgrade-card-header">
-          <span className="upgrade-card-title">Upgrade to Pro</span>
-          <Sparkles size={14} className="upgrade-sparkle-icon" />
+      {/* Upgrade to Pro Card - Automatically fades out after 5 seconds */}
+      {showUpgradeCard && (
+        <div className={`upgrade-pro-card ${isUpgradeFading ? 'upgrade-card-fade-out' : ''}`}>
+          <div className="upgrade-card-header">
+            <span className="upgrade-card-title">Upgrade to Pro</span>
+            <Sparkles size={14} className="upgrade-sparkle-icon" />
+          </div>
+          <p className="upgrade-card-desc">
+            Unlock more power, more models, and more possibilities.
+          </p>
+          <button 
+            className="upgrade-card-btn" 
+            onClick={() => {
+              if (onOpenProfileModal) onOpenProfileModal();
+            }}
+          >
+            Upgrade Now
+          </button>
         </div>
-        <p className="upgrade-card-desc">
-          Unlock more power, more models, and more possibilities.
-        </p>
-        <button 
-          className="upgrade-card-btn" 
-          onClick={() => {
-            if (onOpenProfileModal) onOpenProfileModal();
-          }}
-        >
-          Upgrade Now
-        </button>
-      </div>
+      )}
 
       {/* Bottom User Profile Section (Interactive Gopi Profile) */}
       <div className="sidebar-user-footer">

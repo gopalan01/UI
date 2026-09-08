@@ -248,9 +248,9 @@ class SpeechAudioEngine {
 
     // Speed multiplier calculation
     let speedMultiplier = 1.0;
-    if (speechSpeed === 'slow') speedMultiplier = 0.75;
-    else if (speechSpeed === 'fast') speedMultiplier = 1.38;
-    else if (speechSpeed === 'normal') speedMultiplier = 1.02;
+    if (speechSpeed === 'slow') speedMultiplier = 0.60;
+    else if (speechSpeed === 'fast') speedMultiplier = 1.45;
+    else if (speechSpeed === 'normal') speedMultiplier = 1.0;
     else if (typeof speechSpeed === 'number') speedMultiplier = speechSpeed;
 
     const baseRate = (Number(rate) || 1.0) * speedMultiplier;
@@ -264,17 +264,17 @@ class SpeechAudioEngine {
 
     if (isMale) {
       calculatedPitch = 0.40 * emMod.pitch;
-      calculatedRate = baseRate * 0.92 * emMod.rate;
+      calculatedRate = baseRate * 0.95 * emMod.rate;
     } else if (isUser) {
       calculatedPitch = 0.96 * emMod.pitch;
       calculatedRate = baseRate * 1.0 * emMod.rate;
     } else {
       calculatedPitch = 1.15 * emMod.pitch;
-      calculatedRate = baseRate * 1.02 * emMod.rate;
+      calculatedRate = baseRate * 1.0 * emMod.rate;
     }
 
     calculatedPitch = Math.max(0.2, Math.min(2.0, calculatedPitch));
-    calculatedRate = Math.max(0.5, Math.min(2.0, calculatedRate));
+    calculatedRate = Math.max(0.35, Math.min(2.5, calculatedRate));
 
     const selectedVoice = this.getBestVoice(targetLangCode, isMale);
     const sentences = this.splitIntoSentences(text);

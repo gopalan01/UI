@@ -947,13 +947,6 @@ export default function App() {
                 isSpeaking={aiState === 'speaking'} 
               />
 
-              {/* Real-time Status Caption with localized prompt & active state guidance */}
-              <VoiceStatus
-                state={aiState}
-                config={config}
-                errorMessage={errorMessage}
-              />
-
               {/* NEAT UNIQUE VOICE & LANGUAGE STUDIO (Manual Selection + Auto-Detection Hybrid) */}
               <VoiceSelectorControl
                 config={config}
@@ -1057,6 +1050,7 @@ export default function App() {
         uploadedFile={uploadedVoiceFile}
         onSaveVoiceSample={handleSaveVoiceSample}
         onRemoveVoiceSample={handleRemoveVoiceSample}
+        currentLanguage={config.language}
       />
 
       {/* User Profile & Account Settings Modal (Gopi) */}
