@@ -4,7 +4,8 @@ import {
   Volume2, 
   VolumeX, 
   MoreVertical, 
-  Menu 
+  Menu,
+  Sliders
 } from 'lucide-react';
 
 export default function Header({
@@ -15,7 +16,9 @@ export default function Header({
   isChatDrawerOpen,
   isMuted,
   onToggleMute,
-  messagesCount = 0
+  messagesCount = 0,
+  isVoiceSettingsOpen = false,
+  onToggleVoiceSettings
 }) {
   const handleThreeDotClick = () => {
     if (onToggleChatDrawer) {
@@ -44,9 +47,28 @@ export default function Header({
               <span className="pulse-circle" /> LIVE AI ENGINE
             </span>
           </div>
-          <h1 className="header-main-title">
-            AI Audio / Audio Generator
-          </h1>
+          <div className="header-title-and-settings-row">
+            <h1 className="header-main-title">
+              AI Audio / Audio Generator
+            </h1>
+
+            {/* Voice & Language Settings button with 3-line icon right next to Audio */}
+            <button
+              type="button"
+              id="header-voice-language-settings-btn"
+              className={`header-voice-language-trigger-btn ${isVoiceSettingsOpen ? 'is-active' : ''}`}
+              onClick={onToggleVoiceSettings}
+              title={isVoiceSettingsOpen ? "Close Voice & Language Settings" : "Voice & Language Settings (Click 3-line menu to open)"}
+              aria-label="Voice & Language Settings"
+              aria-expanded={isVoiceSettingsOpen}
+            >
+              <Sliders size={13} className="trigger-slider-icon" />
+              <span className="trigger-text">Voice & Language Settings</span>
+              <span className="trigger-three-lines-wrap" aria-hidden="true" title="3 lines">
+                <Menu size={14} className="trigger-three-lines-icon" />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

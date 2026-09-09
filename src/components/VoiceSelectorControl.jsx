@@ -19,7 +19,9 @@ import {
   Heart,
   Flame,
   Sliders,
-  User
+  User,
+  X,
+  Lock
 } from 'lucide-react';
 import { 
   SUPPORTED_LANGUAGES, 
@@ -363,6 +365,8 @@ const LOCALIZED_SPEED = {
 
 export default function VoiceSelectorControl({
   config,
+  currentStep = 'language',
+  onSetStep,
   onSelectLanguage,
   onSelectRegion,
   onSelectSlang,
@@ -375,10 +379,31 @@ export default function VoiceSelectorControl({
   onSelectQuickPrompt,
   isSpeaking = false,
   speechSpeed = 'normal',
-  onChangeSpeechSpeed
+  onChangeSpeechSpeed,
+  onClose
 }) {
   // Main settings container expanded by default for fixed right sidebar
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(true);
+
+  // Step progression ranks:
+  // 1: Language -> 2: Country -> 3: Slang -> 4: Voice -> 5: Tone -> 6: Completed
+  const STEP_RANKS = {
+    language: 1,
+    region: 2,
+    slang: 3,
+    voice: 4,
+    emotion: 5,
+    completed: 6
+  };
+
+  const currentRank = STEP_RANKS[currentStep] || 1;
+
+  // Step unlock states based strictly on prior step selection:
+  const isLanguageUnlocked = true;
+  const isRegionUnlocked = currentRank >= 2;
+  const isSlangUnlocked = currentRank >= 3;
+  const isVoiceUnlocked = currentRank >= 4;
+  const isEmotionUnlocked = currentRank >= 5;
 
   // Active open dropdown: 'language' | 'region' | 'slang' | 'voice' | 'emotion' | null
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -396,7 +421,61 @@ export default function VoiceSelectorControl({
   }, []);
 
   const toggleDropdown = (name) => {
+    if (name === 'region' && !isRegionUnlocked) return;
+    if (name === 'slang' && !isSlangUnlocked) return;
+    if (name === 'voice' && !isVoiceUnlocked) return;
+    if (name === 'emotion' && !isEmotionUnlocked) return;
+
     setOpenDropdown((prev) => (prev === name ? null : name));
+  };
+
+  // 1. Language Selected -> Unlocks Country & automatically opens Country dropdown
+  const handleLanguagePick = (langId) => {
+    onSelectLanguage(langId);
+    if (onSetStep) onSetStep('region');
+    setTimeout(() => {
+      setOpenDropdown('region');
+    }, 60);
+  };
+
+  // 2. Country Selected -> Unlocks Slang & automatically opens Slang dropdown
+  const handleRegionPick = (regId) => {
+    onSelectRegion(regId);
+    if (onSetStep) onSetStep('slang');
+    setTimeout(() => {
+      setOpenDropdown('slang');
+    }, 60);
+  };
+
+  // 3. Slang Selected -> Unlocks Voice & automatically opens Voice dropdown
+  const handleSlangPick = (slangId) => {
+    onSelectSlang(slangId);
+    if (onSetStep) onSetStep('voice');
+    setTimeout(() => {
+      setOpenDropdown('voice');
+    }, 60);
+  };
+
+  // 4. Voice Selected -> Unlocks Tone & automatically opens Tone dropdown
+  const handleVoicePick = (vid) => {
+    onSelectVoice(vid);
+    if (onSetStep) onSetStep('emotion');
+    const isUserVoice = vid === 'user';
+    if (isUserVoice && !uploadedVoiceFile) {
+      setOpenDropdown(null);
+      if (onOpenVoiceModal) onOpenVoiceModal();
+    } else {
+      setTimeout(() => {
+        setOpenDropdown('emotion');
+      }, 60);
+    }
+  };
+
+  // 5. Tone Selected -> All 5 steps completed!
+  const handleEmotionPick = (emoId) => {
+    onSelectEmotion(emoId);
+    if (onSetStep) onSetStep('completed');
+    setOpenDropdown(null);
   };
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
@@ -497,74 +576,51 @@ export default function VoiceSelectorControl({
   const quickPrompts = getQuickPrompts();
 
   // Reusable Speech Speed Selector
+  // Unique & Simple Minimalist Speech Speed Segmented Control
   const renderSpeechSpeedBox = () => (
-    <div className="neat-speed-box" id="speech-speed-container">
-      <div className="neat-speed-header">
-        <div className="neat-speed-title-wrap">
-          <div className="neat-speed-icon-box">
-            <Sliders size={13} className="text-cyan" />
-          </div>
-          <div className="neat-speed-text-wrap">
-            <span className="neat-speed-label">{speedTexts.title}</span>
-            <span className="neat-speed-sublabel">{speedTexts.sublabel}</span>
-          </div>
+    <div className="simple-speed-control" id="speech-speed-container">
+      <div className="simple-speed-header">
+        <div className="simple-speed-label-group">
+          <Zap size={13} className="text-cyan" />
+          <span className="simple-speed-title">Speech Speed / பேச்சு வேகம்</span>
         </div>
-        <div className={`neat-speed-status-badge badge-speed-${speechSpeed}`}>
-          <span className="neat-speed-badge-dot" />
-          <span className="neat-speed-badge-text">
-            {speechSpeed === 'slow' ? `${speedTexts.slow} (0.6x)` : speechSpeed === 'fast' ? `${speedTexts.fast} (1.4x)` : `${speedTexts.normal} (1.0x)`}
-          </span>
-        </div>
+        <span className="simple-speed-current-tag">
+          {speechSpeed === 'slow' ? '0.6x' : speechSpeed === 'fast' ? '1.4x' : '1.0x'}
+        </span>
       </div>
 
-      <div className="neat-speed-buttons-row">
+      <div className="simple-speed-track" role="group" aria-label="Speech Speed Selector">
         <button
           type="button"
           id="speed-btn-slow"
-          className={`neat-speed-btn speed-btn-slow ${speechSpeed === 'slow' ? 'speed-btn-active' : ''}`}
+          className={`simple-speed-pill ${speechSpeed === 'slow' ? 'is-active' : ''}`}
           onClick={() => onChangeSpeechSpeed && onChangeSpeechSpeed('slow')}
-          title={`Slow Speed (0.6x) - ${speedTexts.slow}`}
+          title="Slow speed: 0.6x"
         >
-          <div className="speed-btn-top">
-            <span className="speed-btn-multiplier">0.6x</span>
-          </div>
-          <div className="speed-btn-body">
-            <span className="speed-btn-title">{speedTexts.slow}</span>
-          </div>
-          {speechSpeed === 'slow' && <span className="speed-btn-active-indicator" />}
+          <span className="pill-multiplier">0.6x</span>
+          <span className="pill-name">{speedTexts.slow ? speedTexts.slow.split(' ')[0] : 'Slow'}</span>
         </button>
 
         <button
           type="button"
           id="speed-btn-normal"
-          className={`neat-speed-btn speed-btn-normal ${speechSpeed === 'normal' ? 'speed-btn-active' : ''}`}
+          className={`simple-speed-pill ${speechSpeed === 'normal' ? 'is-active' : ''}`}
           onClick={() => onChangeSpeechSpeed && onChangeSpeechSpeed('normal')}
-          title={`Normal Speed (1.0x) - ${speedTexts.normal}`}
+          title="Normal speed: 1.0x (Default)"
         >
-          <div className="speed-btn-top">
-            <span className="speed-btn-multiplier">1.0x</span>
-            <span className="speed-btn-badge-default">Default</span>
-          </div>
-          <div className="speed-btn-body">
-            <span className="speed-btn-title">{speedTexts.normal}</span>
-          </div>
-          {speechSpeed === 'normal' && <span className="speed-btn-active-indicator" />}
+          <span className="pill-multiplier">1.0x</span>
+          <span className="pill-name">{speedTexts.normal ? speedTexts.normal.split(' ')[0] : 'Normal'}</span>
         </button>
 
         <button
           type="button"
           id="speed-btn-fast"
-          className={`neat-speed-btn speed-btn-fast ${speechSpeed === 'fast' ? 'speed-btn-active' : ''}`}
+          className={`simple-speed-pill ${speechSpeed === 'fast' ? 'is-active' : ''}`}
           onClick={() => onChangeSpeechSpeed && onChangeSpeechSpeed('fast')}
-          title={`Fast Speed (1.4x) - ${speedTexts.fast}`}
+          title="Fast speed: 1.4x"
         >
-          <div className="speed-btn-top">
-            <span className="speed-btn-multiplier">1.4x</span>
-          </div>
-          <div className="speed-btn-body">
-            <span className="speed-btn-title">{speedTexts.fast}</span>
-          </div>
-          {speechSpeed === 'fast' && <span className="speed-btn-active-indicator" />}
+          <span className="pill-multiplier">1.4x</span>
+          <span className="pill-name">{speedTexts.fast ? speedTexts.fast.split(' ')[0] : 'Fast'}</span>
         </button>
       </div>
     </div>
@@ -572,38 +628,34 @@ export default function VoiceSelectorControl({
 
   return (
     <div className={`voice-language-collapsible-wrapper ${isSettingsExpanded ? 'wrapper-expanded' : 'wrapper-collapsed'}`} aria-label="Voice & Language Settings Panel">
-      {/* 1. SINGLE COLLAPSIBLE SECTION HEADER */}
-      <button
-        type="button"
-        id="voice-language-settings-toggle-btn"
-        className={`collapsible-settings-header ${isSettingsExpanded ? 'header-expanded' : 'header-collapsed'}`}
-        onClick={() => {
-          setIsSettingsExpanded(!isSettingsExpanded);
-          if (isSettingsExpanded) setOpenDropdown(null);
-        }}
-        aria-expanded={isSettingsExpanded}
-        aria-controls="voice-settings-collapsible-content"
-        title={isSettingsExpanded ? 'Click to collapse settings' : 'Click to expand settings'}
+      {/* 1. CLEAN PANEL HEADER (Dropdown & dropup arrows removed) */}
+      <div
+        id="voice-language-settings-panel-header"
+        className="collapsible-settings-header panel-clean-header"
       >
         <div className="settings-header-left">
           <div className="settings-header-icon-box">
             <Sliders size={15} className="settings-header-icon" />
           </div>
           <span className="settings-header-title">Voice & Language Settings</span>
-          {!isSettingsExpanded && (
-            <span className="settings-header-summary-tag">
-              {currentLang.flag} {currentLang.name} • {currentRegion.name.split(' (')[0]} • {currentSlang.name} • {currentVoiceLabel.split(' ')[0]} • {currentEmotionLabel.split(' (')[0]}
-            </span>
-          )}
-        </div>
-
-        {/* Top-Right Dropdown Arrow (▼ when collapsed, ▲ when expanded) */}
-        <div className="settings-header-arrow-wrap">
-          <span className="settings-header-arrow-glyph" aria-hidden="true">
-            {isSettingsExpanded ? '▲' : '▼'}
+          <span className="settings-header-summary-tag">
+            {currentLang.flag} {currentLang.name} • {currentRegion.name.split(' (')[0]} • {currentSlang.name} • {currentVoiceLabel.split(' ')[0]}
           </span>
         </div>
-      </button>
+
+        {/* Clean Close Button to dismiss settings */}
+        {onClose && (
+          <button
+            type="button"
+            className="settings-panel-close-btn"
+            onClick={onClose}
+            title="Close Voice & Language Settings"
+            aria-label="Close Settings Panel"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
 
       {/* 2. EXPANDED SETTINGS CONTENT BODY */}
       <div 
@@ -657,21 +709,26 @@ export default function VoiceSelectorControl({
             </div>
           </div>
 
-          {/* 3. NEAT 5-DROPDOWN GRID: LANGUAGE, COUNTRY, SLANG, VOICE, TONE */}
+          {/* 3. NEAT 5-DROPDOWN GRID: STEP-BY-STEP SEQUENTIAL SELECTION */}
+          {/* Rule: Language -> Country -> Slang -> Voice -> Tone */}
           <div className="voice-dropdowns-grid" ref={dropdownGridRef}>
-            {/* DROPDOWN 1: SELECT LANGUAGE */}
-            <div className={`voice-dropdown-box ${openDropdown === 'language' ? 'is-active-dropdown' : ''}`}>
-              <span className="voice-dropdown-label">
-                <Globe size={13} className="text-purple" />
-                <span>Language / மொழி</span>
-              </span>
+            {/* DROPDOWN 1: SELECT LANGUAGE (STEP 1 - Always selectable) */}
+            <div className={`voice-dropdown-box ${openDropdown === 'language' ? 'is-active-dropdown' : ''} ${currentRank === 1 ? 'is-current-step' : ''}`}>
+              <div className="voice-dropdown-label-row">
+                <span className="voice-dropdown-label">
+                  <span className={`step-badge-circle ${currentRank > 1 ? 'is-done' : 'is-active'}`}>1</span>
+                  <Globe size={13} className="text-purple" />
+                  <span>Language / மொழி</span>
+                </span>
+                <span className="step-state-tag">Step 1</span>
+              </div>
               <button
                 type="button"
                 id="dropdown-btn-language"
                 className={`voice-dropdown-trigger ${openDropdown === 'language' ? 'trigger-open' : ''}`}
                 onClick={() => toggleDropdown('language')}
                 aria-expanded={openDropdown === 'language'}
-                title="Click to choose Language"
+                title="Step 1: Choose Language"
               >
                 <div className="dropdown-trigger-content">
                   <span className="dropdown-flag-icon">{currentLang.flag}</span>
@@ -685,7 +742,7 @@ export default function VoiceSelectorControl({
 
               {openDropdown === 'language' && (
                 <div className="voice-dropdown-menu animate-fade-in" id="menu-language">
-                  <div className="dropdown-menu-header">Select Language ({SUPPORTED_LANGUAGES.length})</div>
+                  <div className="dropdown-menu-header">Step 1: Select Language ({SUPPORTED_LANGUAGES.length})</div>
                   <div className="dropdown-menu-scroll">
                     {SUPPORTED_LANGUAGES.map((lang) => {
                       const isSelected = config.language === lang.id;
@@ -694,10 +751,7 @@ export default function VoiceSelectorControl({
                           key={lang.id}
                           type="button"
                           className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
-                          onClick={() => {
-                            onSelectLanguage(lang.id);
-                            setOpenDropdown(null);
-                          }}
+                          onClick={() => handleLanguagePick(lang.id)}
                         >
                           <span className="option-flag">{lang.flag}</span>
                           <div className="option-details">
@@ -713,32 +767,43 @@ export default function VoiceSelectorControl({
               )}
             </div>
 
-            {/* DROPDOWN 2: SELECT COUNTRY / REGION */}
-            <div className={`voice-dropdown-box ${openDropdown === 'region' ? 'is-active-dropdown' : ''}`}>
-              <span className="voice-dropdown-label">
-                <MapPin size={13} className="text-blue" />
-                <span>Country / நாடு</span>
-              </span>
+            {/* DROPDOWN 2: SELECT COUNTRY / REGION (STEP 2 - Unlocks only after Language is selected) */}
+            <div className={`voice-dropdown-box ${openDropdown === 'region' ? 'is-active-dropdown' : ''} ${!isRegionUnlocked ? 'is-locked' : currentRank === 2 ? 'is-current-step' : ''}`}>
+              <div className="voice-dropdown-label-row">
+                <span className="voice-dropdown-label">
+                  <span className={`step-badge-circle ${currentRank > 2 ? 'is-done' : currentRank === 2 ? 'is-active' : 'is-locked'}`}>2</span>
+                  <MapPin size={13} className="text-blue" />
+                  <span>Country / நாடு</span>
+                </span>
+                {!isRegionUnlocked ? (
+                  <span className="step-locked-tag">
+                    <Lock size={10} /> Locked (Select Language)
+                  </span>
+                ) : (
+                  <span className="step-state-tag">Step 2</span>
+                )}
+              </div>
               <button
                 type="button"
                 id="dropdown-btn-region"
-                className={`voice-dropdown-trigger ${openDropdown === 'region' ? 'trigger-open' : ''}`}
+                className={`voice-dropdown-trigger ${openDropdown === 'region' ? 'trigger-open' : ''} ${!isRegionUnlocked ? 'is-locked' : ''}`}
                 onClick={() => toggleDropdown('region')}
+                disabled={!isRegionUnlocked}
                 aria-expanded={openDropdown === 'region'}
-                title="Click to choose Country or Region"
+                title={isRegionUnlocked ? "Step 2: Choose Country" : "Select Language first to unlock Country"}
               >
                 <div className="dropdown-trigger-content">
                   <MapPin size={13} className="text-blue" />
                   <span className="dropdown-trigger-title">{currentRegion.name}</span>
                 </div>
                 <span className="dropdown-arrow-icon" aria-hidden="true">
-                  {openDropdown === 'region' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {!isRegionUnlocked ? <Lock size={13} className="text-muted" /> : openDropdown === 'region' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
               </button>
 
-              {openDropdown === 'region' && (
+              {isRegionUnlocked && openDropdown === 'region' && (
                 <div className="voice-dropdown-menu animate-fade-in" id="menu-region">
-                  <div className="dropdown-menu-header">Select Country for {currentLang.name}</div>
+                  <div className="dropdown-menu-header">Step 2: Select Country for {currentLang.name}</div>
                   <div className="dropdown-menu-scroll">
                     {currentLang.regions.map((reg) => {
                       const isSelected = (config.region || currentRegion.id) === reg.id;
@@ -747,10 +812,7 @@ export default function VoiceSelectorControl({
                           key={reg.id}
                           type="button"
                           className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
-                          onClick={() => {
-                            onSelectRegion(reg.id);
-                            setOpenDropdown(null);
-                          }}
+                          onClick={() => handleRegionPick(reg.id)}
                         >
                           <MapPin size={13} className="text-blue" />
                           <div className="option-details">
@@ -768,32 +830,43 @@ export default function VoiceSelectorControl({
               )}
             </div>
 
-            {/* DROPDOWN 3: SELECT SLANG / DIALECT */}
-            <div className={`voice-dropdown-box ${openDropdown === 'slang' ? 'is-active-dropdown' : ''}`}>
-              <span className="voice-dropdown-label">
-                <Radio size={13} className="text-cyan" />
-                <span>Slang / வழக்கு</span>
-              </span>
+            {/* DROPDOWN 3: SELECT SLANG / DIALECT (STEP 3 - Unlocks only after Country is selected) */}
+            <div className={`voice-dropdown-box ${openDropdown === 'slang' ? 'is-active-dropdown' : ''} ${!isSlangUnlocked ? 'is-locked' : currentRank === 3 ? 'is-current-step' : ''}`}>
+              <div className="voice-dropdown-label-row">
+                <span className="voice-dropdown-label">
+                  <span className={`step-badge-circle ${currentRank > 3 ? 'is-done' : currentRank === 3 ? 'is-active' : 'is-locked'}`}>3</span>
+                  <Radio size={13} className="text-cyan" />
+                  <span>Slang / வழக்கு</span>
+                </span>
+                {!isSlangUnlocked ? (
+                  <span className="step-locked-tag">
+                    <Lock size={10} /> Locked (Select Country)
+                  </span>
+                ) : (
+                  <span className="step-state-tag">Step 3</span>
+                )}
+              </div>
               <button
                 type="button"
                 id="dropdown-btn-slang"
-                className={`voice-dropdown-trigger ${openDropdown === 'slang' ? 'trigger-open' : ''}`}
+                className={`voice-dropdown-trigger ${openDropdown === 'slang' ? 'trigger-open' : ''} ${!isSlangUnlocked ? 'is-locked' : ''}`}
                 onClick={() => toggleDropdown('slang')}
+                disabled={!isSlangUnlocked}
                 aria-expanded={openDropdown === 'slang'}
-                title="Click to choose Slang / Dialect"
+                title={isSlangUnlocked ? "Step 3: Choose Slang / Dialect" : "Select Country first to unlock Slang"}
               >
                 <div className="dropdown-trigger-content">
                   <Radio size={13} className="text-cyan" />
                   <span className="dropdown-trigger-title">{currentSlang.name}</span>
                 </div>
                 <span className="dropdown-arrow-icon" aria-hidden="true">
-                  {openDropdown === 'slang' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {!isSlangUnlocked ? <Lock size={13} className="text-muted" /> : openDropdown === 'slang' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
               </button>
 
-              {openDropdown === 'slang' && (
+              {isSlangUnlocked && openDropdown === 'slang' && (
                 <div className="voice-dropdown-menu animate-fade-in" id="menu-slang">
-                  <div className="dropdown-menu-header">{currentLang.name} Dialect / Slang ({currentLang.slangs.length})</div>
+                  <div className="dropdown-menu-header">Step 3: {currentLang.name} Dialect / Slang ({currentLang.slangs.length})</div>
                   <div className="dropdown-menu-scroll">
                     {currentLang.slangs.map((slang) => {
                       const isSelected = (config.slang || currentSlang.id) === slang.id;
@@ -802,10 +875,7 @@ export default function VoiceSelectorControl({
                           key={slang.id}
                           type="button"
                           className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
-                          onClick={() => {
-                            onSelectSlang(slang.id);
-                            setOpenDropdown(null);
-                          }}
+                          onClick={() => handleSlangPick(slang.id)}
                         >
                           <Radio size={13} className="text-cyan" />
                           <div className="option-details">
@@ -821,19 +891,30 @@ export default function VoiceSelectorControl({
               )}
             </div>
 
-            {/* DROPDOWN 4: SELECT VOICE */}
-            <div className={`voice-dropdown-box ${openDropdown === 'voice' ? 'is-active-dropdown' : ''}`}>
-              <span className="voice-dropdown-label">
-                <Volume2 size={13} className="text-emerald" />
-                <span>Voice / குரல்</span>
-              </span>
+            {/* DROPDOWN 4: SELECT VOICE (STEP 4 - Unlocks only after Slang is selected) */}
+            <div className={`voice-dropdown-box ${openDropdown === 'voice' ? 'is-active-dropdown' : ''} ${!isVoiceUnlocked ? 'is-locked' : currentRank === 4 ? 'is-current-step' : ''}`}>
+              <div className="voice-dropdown-label-row">
+                <span className="voice-dropdown-label">
+                  <span className={`step-badge-circle ${currentRank > 4 ? 'is-done' : currentRank === 4 ? 'is-active' : 'is-locked'}`}>4</span>
+                  <Volume2 size={13} className="text-emerald" />
+                  <span>Voice / குரல்</span>
+                </span>
+                {!isVoiceUnlocked ? (
+                  <span className="step-locked-tag">
+                    <Lock size={10} /> Locked (Select Slang)
+                  </span>
+                ) : (
+                  <span className="step-state-tag">Step 4</span>
+                )}
+              </div>
               <button
                 type="button"
                 id="dropdown-btn-voice"
-                className={`voice-dropdown-trigger ${openDropdown === 'voice' ? 'trigger-open' : ''}`}
+                className={`voice-dropdown-trigger ${openDropdown === 'voice' ? 'trigger-open' : ''} ${!isVoiceUnlocked ? 'is-locked' : ''}`}
                 onClick={() => toggleDropdown('voice')}
+                disabled={!isVoiceUnlocked}
                 aria-expanded={openDropdown === 'voice'}
-                title="Click to choose Voice"
+                title={isVoiceUnlocked ? "Step 4: Choose Voice Model" : "Select Slang first to unlock Voice"}
               >
                 <div className="dropdown-trigger-content">
                   {config.voice === 'user' ? (
@@ -849,13 +930,13 @@ export default function VoiceSelectorControl({
                   )}
                 </div>
                 <span className="dropdown-arrow-icon" aria-hidden="true">
-                  {openDropdown === 'voice' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {!isVoiceUnlocked ? <Lock size={13} className="text-muted" /> : openDropdown === 'voice' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
               </button>
 
-              {openDropdown === 'voice' && (
+              {isVoiceUnlocked && openDropdown === 'voice' && (
                 <div className="voice-dropdown-menu animate-fade-in" id="menu-voice">
-                  <div className="dropdown-menu-header">Select Voice Model</div>
+                  <div className="dropdown-menu-header">Step 4: Select Voice Model</div>
                   <div className="dropdown-menu-scroll">
                     {canonicalVoices.map((v) => {
                       const isSelected = config.voice === v.id || currentVoice.id === v.id;
@@ -865,13 +946,7 @@ export default function VoiceSelectorControl({
                           key={v.id}
                           type="button"
                           className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
-                          onClick={() => {
-                            onSelectVoice(v.id);
-                            setOpenDropdown(null);
-                            if (isUserVoice && !uploadedVoiceFile) {
-                              onOpenVoiceModal();
-                            }
-                          }}
+                          onClick={() => handleVoicePick(v.id)}
                         >
                           {isUserVoice ? (
                             <UploadCloud size={14} className="text-emerald" />
@@ -897,32 +972,43 @@ export default function VoiceSelectorControl({
               )}
             </div>
 
-            {/* DROPDOWN 5: SELECT TONE / EMOTION */}
-            <div className={`voice-dropdown-box ${openDropdown === 'emotion' ? 'is-active-dropdown' : ''}`}>
-              <span className="voice-dropdown-label">
-                <Sliders size={13} className="text-amber" />
-                <span>Tone / பாணி</span>
-              </span>
+            {/* DROPDOWN 5: SELECT TONE / EMOTION (STEP 5 - Unlocks only after Voice is selected) */}
+            <div className={`voice-dropdown-box ${openDropdown === 'emotion' ? 'is-active-dropdown' : ''} ${!isEmotionUnlocked ? 'is-locked' : currentRank === 5 ? 'is-current-step' : ''}`}>
+              <div className="voice-dropdown-label-row">
+                <span className="voice-dropdown-label">
+                  <span className={`step-badge-circle ${currentRank > 5 ? 'is-done' : currentRank === 5 ? 'is-active' : 'is-locked'}`}>5</span>
+                  <Sliders size={13} className="text-amber" />
+                  <span>Tone / பாணி</span>
+                </span>
+                {!isEmotionUnlocked ? (
+                  <span className="step-locked-tag">
+                    <Lock size={10} /> Locked (Select Voice)
+                  </span>
+                ) : (
+                  <span className="step-state-tag">Step 5</span>
+                )}
+              </div>
               <button
                 type="button"
                 id="dropdown-btn-emotion"
-                className={`voice-dropdown-trigger ${openDropdown === 'emotion' ? 'trigger-open' : ''}`}
+                className={`voice-dropdown-trigger ${openDropdown === 'emotion' ? 'trigger-open' : ''} ${!isEmotionUnlocked ? 'is-locked' : ''}`}
                 onClick={() => toggleDropdown('emotion')}
+                disabled={!isEmotionUnlocked}
                 aria-expanded={openDropdown === 'emotion'}
-                title="Click to choose Voice Tone"
+                title={isEmotionUnlocked ? "Step 5: Choose Voice Tone" : "Select Voice first to unlock Tone"}
               >
                 <div className="dropdown-trigger-content">
                   <CurrentEmotionIcon size={14} className="text-amber" />
                   <span className="dropdown-trigger-title">{currentEmotionLabel}</span>
                 </div>
                 <span className="dropdown-arrow-icon" aria-hidden="true">
-                  {openDropdown === 'emotion' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {!isEmotionUnlocked ? <Lock size={13} className="text-muted" /> : openDropdown === 'emotion' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </span>
               </button>
 
-              {openDropdown === 'emotion' && (
+              {isEmotionUnlocked && openDropdown === 'emotion' && (
                 <div className="voice-dropdown-menu animate-fade-in" id="menu-emotion">
-                  <div className="dropdown-menu-header">Select Voice Tone ({SUPPORTED_EMOTIONS.length})</div>
+                  <div className="dropdown-menu-header">Step 5: Select Voice Tone ({SUPPORTED_EMOTIONS.length})</div>
                   <div className="dropdown-menu-scroll">
                     {SUPPORTED_EMOTIONS.map((emo) => {
                       const isSelected = (config.emotion || 'default') === emo.id;
@@ -933,10 +1019,7 @@ export default function VoiceSelectorControl({
                           key={emo.id}
                           type="button"
                           className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
-                          onClick={() => {
-                            onSelectEmotion(emo.id);
-                            setOpenDropdown(null);
-                          }}
+                          onClick={() => handleEmotionPick(emo.id)}
                         >
                           <ToneIcon size={14} className="text-amber" />
                           <div className="option-details">

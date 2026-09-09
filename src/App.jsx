@@ -122,6 +122,18 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [activePlayingIndex, setActivePlayingIndex] = useState(null);
   const [hasStartedVoice, setHasStartedVoice] = useState(false);
+  const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(false);
+
+  // Close voice settings on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isVoiceSettingsOpen) {
+        setIsVoiceSettingsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isVoiceSettingsOpen]);
 
   // Update & persist User Name
   const handleUpdateUserName = (newName) => {
@@ -915,6 +927,8 @@ export default function App() {
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
           onOpenHistoryMenu={() => setIsHistoryMenuOpen(true)}
           messagesCount={messages.length}
+          isVoiceSettingsOpen={isVoiceSettingsOpen}
+          onToggleVoiceSettings={() => setIsVoiceSettingsOpen((prev) => !prev)}
         />
 
         {/* Content Body: Fixed Center AI Stage + WhatsApp Style Chat Panel */}
@@ -941,17 +955,8 @@ export default function App() {
                   />
                 </div>
 
-                {/* BOTTOM: Both Animation Buttons + Visualizer Dock */}
+                {/* BOTTOM: Both Animation Buttons on Top, Audio Visualizer Animation BELOW */}
                 <div className="stage-bottom-animation-dock">
-                  {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
-                  <div className="dock-visualizer-wrapper">
-                    <AudioVisualizer 
-                      state={aiState} 
-                      isListening={aiState === 'listening'} 
-                      isSpeaking={aiState === 'speaking'} 
-                    />
-                  </div>
-
                   {/* The Two Animation Buttons Row (AI Character on Left, Energy Bridge in Center, Central Mic on Right) */}
                   <div className="dock-interactive-row">
                     {/* Left: Holographic 3D AI Character Orb */}
@@ -978,6 +983,15 @@ export default function App() {
                       />
                     </div>
                   </div>
+
+                  {/* Realtime Dual-Channel Audio Visualizer Spectrum (Placed BELOW Tap to Speak) */}
+                  <div className="dock-visualizer-wrapper">
+                    <AudioVisualizer 
+                      state={aiState} 
+                      isListening={aiState === 'listening'} 
+                      isSpeaking={aiState === 'speaking'} 
+                    />
+                  </div>
                 </div>
               </div>
             </section>
@@ -993,21 +1007,6 @@ export default function App() {
                 <div className="center-hero-badge">
                   <span className="hero-badge-title">One AI. <strong>Infinite Possibilities.</strong></span>
                 </div>
-
-                {/* Resume past conversation pill if messages exist */}
-                {messages && messages.length > 0 && (
-                  <div className="hero-resume-pill-wrapper animate-fade-in">
-                    <button
-                      type="button"
-                      className="hero-resume-pill-btn"
-                      onClick={() => setHasStartedVoice(true)}
-                      title="View active conversation transcript"
-                    >
-                      <MessageSquare size={13} className="text-cyan" />
-                      <span>Resume Conversation ({messages.length} exchanges)</span>
-                    </button>
-                  </div>
-                )}
 
                 {/* DUAL CORE HERO ROW (AI Orb on Left, Central Mic on Right, Energy Bridge in Center) */}
                 <div className="hero-interactive-row">
@@ -1052,33 +1051,43 @@ export default function App() {
             </section>
           )}
 
-          {/* RIGHT FIXED PANEL: VOICE & LANGUAGE SETTINGS PERMANENTLY HERE */}
-          <aside 
-            className="fixed-settings-sidebar-wrapper" 
-            aria-label="Voice & Language Settings Studio"
-          >
-            <VoiceSelectorControl
-              config={config}
-              currentStep={currentStep}
-              onSetStep={(step) => setCurrentStep(step)}
-              onSelectLanguage={handleSelectLanguage}
-              onSelectRegion={handleSelectRegion}
-              onSelectSlang={handleSelectSlang}
-              onSelectVoice={handleSelectVoice}
-              onSelectEmotion={handleSelectEmotion}
-              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-              uploadedVoiceFile={uploadedVoiceFile}
-              onTestVoice={handleTestVoice}
-              onRestartSetup={handleRestartConversation}
-              onSelectQuickPrompt={(promptText) => {
-                setHasStartedVoice(true);
-                handleSpeechResult(promptText);
-              }}
-              isSpeaking={aiState === 'speaking'}
-              speechSpeed={speechSpeed}
-              onChangeSpeechSpeed={handleChangeSpeechSpeed}
-            />
-          </aside>
+          {/* RIGHT PANEL: VOICE & LANGUAGE SETTINGS (Appears only when 3-line button is clicked) */}
+          {isVoiceSettingsOpen && (
+            <>
+              <div 
+                className="voice-settings-backdrop" 
+                onClick={() => setIsVoiceSettingsOpen(false)}
+                aria-hidden="true"
+              />
+              <aside 
+                className="fixed-settings-sidebar-wrapper animate-slide-in-right" 
+                aria-label="Voice & Language Settings Studio"
+              >
+                <VoiceSelectorControl
+                  config={config}
+                  currentStep={currentStep}
+                  onSetStep={(step) => setCurrentStep(step)}
+                  onSelectLanguage={handleSelectLanguage}
+                  onSelectRegion={handleSelectRegion}
+                  onSelectSlang={handleSelectSlang}
+                  onSelectVoice={handleSelectVoice}
+                  onSelectEmotion={handleSelectEmotion}
+                  onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+                  uploadedVoiceFile={uploadedVoiceFile}
+                  onTestVoice={handleTestVoice}
+                  onRestartSetup={handleRestartConversation}
+                  onSelectQuickPrompt={(promptText) => {
+                    setHasStartedVoice(true);
+                    handleSpeechResult(promptText);
+                  }}
+                  isSpeaking={aiState === 'speaking'}
+                  speechSpeed={speechSpeed}
+                  onChangeSpeechSpeed={handleChangeSpeechSpeed}
+                  onClose={() => setIsVoiceSettingsOpen(false)}
+                />
+              </aside>
+            </>
+          )}
         </main>
       </div>
 
