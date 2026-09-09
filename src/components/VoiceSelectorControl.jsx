@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Globe, 
   MapPin, 
@@ -9,8 +9,6 @@ import {
   Sparkles, 
   Play, 
   RotateCcw, 
-  ChevronRight,
-  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Smile,
@@ -21,8 +19,7 @@ import {
   Heart,
   Flame,
   Sliders,
-  User,
-  Lock
+  User
 } from 'lucide-react';
 import { 
   SUPPORTED_LANGUAGES, 
@@ -31,8 +28,6 @@ import {
   SUPPORTED_EMOTIONS,
   getEmotionPreference
 } from '../constants/languageConfig';
-
-const STEP_ORDER = ['language', 'region', 'slang', 'voice', 'emotion'];
 
 // Static Lucide Icons for Tone Options (Zero emojis, static & clean UI icons)
 const TONE_ICONS = {
@@ -368,8 +363,6 @@ const LOCALIZED_SPEED = {
 
 export default function VoiceSelectorControl({
   config,
-  currentStep = 'language', // 'language' | 'region' | 'slang' | 'voice' | 'emotion' | 'completed'
-  onSetStep,
   onSelectLanguage,
   onSelectRegion,
   onSelectSlang,
@@ -384,8 +377,27 @@ export default function VoiceSelectorControl({
   speechSpeed = 'normal',
   onChangeSpeechSpeed
 }) {
-  // Requirement 1: Single collapsible section, closed/collapsed by default
-  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+  // Main settings container expanded by default for fixed right sidebar
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(true);
+
+  // Active open dropdown: 'language' | 'region' | 'slang' | 'voice' | 'emotion' | null
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const dropdownGridRef = useRef(null);
+
+  // Close open dropdown when clicking anywhere outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownGridRef.current && !dropdownGridRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const toggleDropdown = (name) => {
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  };
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
   const currentRegion = currentLang.regions.find((r) => r.id === config.region) || currentLang.regions[0];
@@ -394,14 +406,6 @@ export default function VoiceSelectorControl({
   const currentVoice = getVoicePreference(config.language, config.voice);
   const currentEmotion = getEmotionPreference(config.emotion || 'default');
 
-  const activeIndex = currentStep === 'completed' ? 5 : STEP_ORDER.indexOf(currentStep);
-
-  // Helper to check if a step tab is accessible
-  const isStepAccessible = (stepId, index) => {
-    if (currentStep === 'completed') return true;
-    return index <= activeIndex;
-  };
-
   // Localized string helpers
   const voiceLangDict = LOCALIZED_VOICE_LABELS[config.language] || LOCALIZED_VOICE_LABELS.english;
   const toneLangDict = LOCALIZED_TONES[config.language] || LOCALIZED_TONES.english;
@@ -409,8 +413,23 @@ export default function VoiceSelectorControl({
 
   const currentVoiceLabel = voiceLangDict[currentVoice.id] || voiceLangDict[currentVoice.gender] || currentVoice.name;
   const currentEmotionLabel = toneLangDict[currentEmotion.id] || currentEmotion.name;
+  const CurrentEmotionIcon = TONE_ICONS[currentEmotion.id] || Sliders;
 
-  // Quick prompt suggestions based on selected language and slang
+  // 3 Standard Voices: Male Voice, Female Voice, Own Voice
+  const canonicalVoices = ['male', 'female', 'user'].map((vid) => {
+    const existingObj = currentVoiceList.find((v) => v.id === vid || v.gender === vid) || {
+      id: vid,
+      gender: vid,
+      name: vid === 'male' ? 'Male Voice' : vid === 'female' ? 'Female Voice' : 'Own Voice'
+    };
+    return {
+      ...existingObj,
+      id: vid,
+      displayName: voiceLangDict[vid] || existingObj.name
+    };
+  });
+
+  // Quick prompts
   const getQuickPrompts = () => {
     if (config.language === 'tamil') {
       if (config.slang === 'kongu_tamil') {
@@ -447,7 +466,6 @@ export default function VoiceSelectorControl({
         { id: 'p3', text: 'எப்படி இருக்கீங்க?' }
       ];
     }
-
     if (config.language === 'hindi') {
       return [
         { id: 'p1', text: 'एक मजेदार चुटकुला सुनाओ' },
@@ -455,7 +473,6 @@ export default function VoiceSelectorControl({
         { id: 'p3', text: 'क्या हाल चाल है?' }
       ];
     }
-
     if (config.language === 'telugu') {
       return [
         { id: 'p1', text: 'ఒక మంచి జోక్ చెప్పు' },
@@ -463,7 +480,6 @@ export default function VoiceSelectorControl({
         { id: 'p3', text: 'ఎలా ఉన్నారు?' }
       ];
     }
-
     if (config.language === 'malayalam') {
       return [
         { id: 'p1', text: 'ഒരു തമാശ പറയൂ' },
@@ -471,79 +487,6 @@ export default function VoiceSelectorControl({
         { id: 'p3', text: 'സുഖമാണോ?' }
       ];
     }
-
-    if (config.language === 'kannada') {
-      return [
-        { id: 'p1', text: 'ಒಂದು ಜೋಕ್ ಹೇಳಿ' },
-        { id: 'p2', text: 'தமிழி (THAMILI) ಬಗ್ಗೆ ತಿಳಿಸಿ' },
-        { id: 'p3', text: 'ಹೇಗಿದ್ದೀರಾ?' }
-      ];
-    }
-
-    if (config.language === 'bengali') {
-      return [
-        { id: 'p1', text: 'একটি কৌতুক বলুন' },
-        { id: 'p2', text: 'தமிழி (THAMILI) সম্পর্কে বলুন' },
-        { id: 'p3', text: 'কেমন আছেন?' }
-      ];
-    }
-
-    if (config.language === 'marathi') {
-      return [
-        { id: 'p1', text: 'एक विनोद सांगा' },
-        { id: 'p2', text: 'தமிழி (THAMILI) बद्दल सांगा' },
-        { id: 'p3', text: 'कसे आहात?' }
-      ];
-    }
-
-    if (config.language === 'gujarati') {
-      return [
-        { id: 'p1', text: 'એક જોક કહો' },
-        { id: 'p2', text: 'தமிழி (THAMILI) વિશે જણાવો' },
-        { id: 'p3', text: 'કેમ છો?' }
-      ];
-    }
-
-    if (config.language === 'spanish') {
-      return [
-        { id: 'p1', text: 'Cuéntame un chiste' },
-        { id: 'p2', text: '¿Qué es THAMILI AI?' },
-        { id: 'p3', text: '¿Cómo estás?' }
-      ];
-    }
-
-    if (config.language === 'french') {
-      return [
-        { id: 'p1', text: 'Raconte-moi une blague' },
-        { id: 'p2', text: 'Qu’est-ce que THAMILI AI ?' },
-        { id: 'p3', text: 'Comment allez-vous ?' }
-      ];
-    }
-
-    if (config.language === 'german') {
-      return [
-        { id: 'p1', text: 'Erzähle einen Witz' },
-        { id: 'p2', text: 'Was ist THAMILI KI?' },
-        { id: 'p3', text: 'Wie geht es dir?' }
-      ];
-    }
-
-    if (config.language === 'japanese') {
-      return [
-        { id: 'p1', text: '面白いジョークを言って' },
-        { id: 'p2', text: 'THAMILI AIについて教えて' },
-        { id: 'p3', text: '元気ですか？' }
-      ];
-    }
-
-    if (config.language === 'arabic') {
-      return [
-        { id: 'p1', text: 'قل لي نكتة مضحكة' },
-        { id: 'p2', text: 'أخبرني عن THAMILI AI' },
-        { id: 'p3', text: 'كيف حالك اليوم؟' }
-      ];
-    }
-
     return [
       { id: 'p1', text: 'Tell me a funny joke' },
       { id: 'p2', text: 'What is THAMILI AI?' },
@@ -553,36 +496,13 @@ export default function VoiceSelectorControl({
 
   const quickPrompts = getQuickPrompts();
 
-  // Clean, concise steps for the top progress bar (5 Steps: Language, Country, Slang, Voice, Tone)
-  const steps = [
-    { id: 'language', label: '1. Language', shortVal: currentLang.nativeName || currentLang.name, icon: Globe },
-    { id: 'region', label: '2. Country', shortVal: currentRegion.name.split(' (')[0], icon: MapPin },
-    { id: 'slang', label: '3. Slang', shortVal: currentSlang.name.split(' (')[0], icon: Radio },
-    { id: 'voice', label: '4. Voice', shortVal: currentVoiceLabel.split(' ')[0], icon: Volume2 },
-    { id: 'emotion', label: '5. Tone', shortVal: currentEmotionLabel.split(' (')[0], icon: Sliders }
-  ];
-
-  // Exactly 3 Voice Options: Male Voice, Female Voice, Own Voice
-  const canonicalVoices = ['male', 'female', 'user'].map((vid) => {
-    const existingObj = currentVoiceList.find((v) => v.id === vid || v.gender === vid) || {
-      id: vid,
-      gender: vid,
-      name: vid === 'male' ? 'Male Voice' : vid === 'female' ? 'Female Voice' : 'Own Voice'
-    };
-    return {
-      ...existingObj,
-      id: vid,
-      displayName: voiceLangDict[vid] || existingObj.name
-    };
-  });
-
-  // Reusable Clickable 3-Option Speech Speed Box (Dynamically localized)
+  // Reusable Speech Speed Selector
   const renderSpeechSpeedBox = () => (
     <div className="neat-speed-box" id="speech-speed-container">
       <div className="neat-speed-header">
         <div className="neat-speed-title-wrap">
           <div className="neat-speed-icon-box">
-            <Sliders size={14} className="text-cyan" />
+            <Sliders size={13} className="text-cyan" />
           </div>
           <div className="neat-speed-text-wrap">
             <span className="neat-speed-label">{speedTexts.title}</span>
@@ -598,7 +518,6 @@ export default function VoiceSelectorControl({
       </div>
 
       <div className="neat-speed-buttons-row">
-        {/* 1. SLOW BUTTON */}
         <button
           type="button"
           id="speed-btn-slow"
@@ -615,7 +534,6 @@ export default function VoiceSelectorControl({
           {speechSpeed === 'slow' && <span className="speed-btn-active-indicator" />}
         </button>
 
-        {/* 2. NORMAL BUTTON (CENTER & DEFAULT) */}
         <button
           type="button"
           id="speed-btn-normal"
@@ -633,7 +551,6 @@ export default function VoiceSelectorControl({
           {speechSpeed === 'normal' && <span className="speed-btn-active-indicator" />}
         </button>
 
-        {/* 3. FAST BUTTON */}
         <button
           type="button"
           id="speed-btn-fast"
@@ -654,18 +571,16 @@ export default function VoiceSelectorControl({
   );
 
   return (
-    <div className="voice-language-collapsible-wrapper" aria-label="Voice & Language Settings Panel">
-      {/* ========================================================
-          1. SINGLE COLLAPSIBLE SECTION HEADER
-          - Header: Voice & Language Settings
-          - ONE dropdown arrow at TOP-RIGHT (▼ when collapsed, ▲ when expanded)
-          - Closed / Collapsed by default
-          ======================================================== */}
+    <div className={`voice-language-collapsible-wrapper ${isSettingsExpanded ? 'wrapper-expanded' : 'wrapper-collapsed'}`} aria-label="Voice & Language Settings Panel">
+      {/* 1. SINGLE COLLAPSIBLE SECTION HEADER */}
       <button
         type="button"
         id="voice-language-settings-toggle-btn"
         className={`collapsible-settings-header ${isSettingsExpanded ? 'header-expanded' : 'header-collapsed'}`}
-        onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
+        onClick={() => {
+          setIsSettingsExpanded(!isSettingsExpanded);
+          if (isSettingsExpanded) setOpenDropdown(null);
+        }}
         aria-expanded={isSettingsExpanded}
         aria-controls="voice-settings-collapsible-content"
         title={isSettingsExpanded ? 'Click to collapse settings' : 'Click to expand settings'}
@@ -677,12 +592,12 @@ export default function VoiceSelectorControl({
           <span className="settings-header-title">Voice & Language Settings</span>
           {!isSettingsExpanded && (
             <span className="settings-header-summary-tag">
-              {currentLang.flag} {currentLang.name} • {currentVoiceLabel.split(' ')[0]} • {currentEmotionLabel.split(' (')[0]}
+              {currentLang.flag} {currentLang.name} • {currentRegion.name.split(' (')[0]} • {currentSlang.name} • {currentVoiceLabel.split(' ')[0]} • {currentEmotionLabel.split(' (')[0]}
             </span>
           )}
         </div>
 
-        {/* ONE neat dropdown arrow at TOP-RIGHT corner: ▼ when collapsed, ▲ when expanded */}
+        {/* Top-Right Dropdown Arrow (▼ when collapsed, ▲ when expanded) */}
         <div className="settings-header-arrow-wrap">
           <span className="settings-header-arrow-glyph" aria-hidden="true">
             {isSettingsExpanded ? '▲' : '▼'}
@@ -690,58 +605,24 @@ export default function VoiceSelectorControl({
         </div>
       </button>
 
-      {/* ========================================================
-          2. EXPANDABLE SETTINGS CONTENT BODY (Smooth transition)
-          ======================================================== */}
+      {/* 2. EXPANDED SETTINGS CONTENT BODY */}
       <div 
         id="voice-settings-collapsible-content"
         className={`collapsible-settings-body ${isSettingsExpanded ? 'body-expanded' : 'body-collapsed'}`}
         aria-hidden={!isSettingsExpanded}
       >
         <div className="neat-voice-studio-card" aria-label="Voice & Language Studio Selection">
-          {/* 1. TOP STEPPER BREADCRUMBS ROW WITH STRICT STEP LOCKING */}
+          {/* Top Quick Actions Bar (Test Voice & Restart) */}
           <div className="studio-navbar-header">
-            <div className="stepper-breadcrumbs">
-              {steps.map((s, index) => {
-                const isActive = currentStep === s.id;
-                const isUnlocked = isStepAccessible(s.id, index);
-                const isDone = (currentStep === 'completed') || (activeIndex > index);
-                const IconComp = s.icon;
-
-                return (
-                  <React.Fragment key={s.id}>
-                    <button
-                      type="button"
-                      id={`step-tab-${s.id}`}
-                      className={`breadcrumb-pill ${isActive ? 'active-pill' : ''} ${!isUnlocked ? 'locked-pill' : 'idle-pill'}`}
-                      onClick={() => {
-                        if (isUnlocked && onSetStep) {
-                          onSetStep(s.id);
-                        }
-                      }}
-                      disabled={!isUnlocked}
-                      title={!isUnlocked ? `Complete previous step to unlock ${s.label}` : `Switch to ${s.label}`}
-                    >
-                      {!isUnlocked ? (
-                        <Lock size={10} className="breadcrumb-lock-icon" />
-                      ) : (
-                        <IconComp size={11} className="breadcrumb-icon" />
-                      )}
-                      <span className="breadcrumb-title">{s.label}</span>
-                      {isActive && <span className="breadcrumb-val">({s.shortVal})</span>}
-                      {isDone && !isActive && (
-                        <Check size={10} className="breadcrumb-check text-emerald" />
-                      )}
-                    </button>
-                    {index < steps.length - 1 && (
-                      <ChevronRight size={11} className={`breadcrumb-separator ${!isUnlocked ? 'separator-muted' : ''}`} />
-                    )}
-                  </React.Fragment>
-                );
-              })}
+            <div className="studio-header-summary">
+              <span className="studio-summary-chip">
+                {currentLang.flag} <strong>{currentLang.name}</strong> ({currentLang.nativeName})
+              </span>
+              <span className="studio-summary-sub">
+                {currentRegion.name.split(' (')[0]} • {currentSlang.name}
+              </span>
             </div>
 
-            {/* Action Controls: Test Voice + Restart */}
             <div className="studio-quick-actions">
               <button
                 type="button"
@@ -768,7 +649,7 @@ export default function VoiceSelectorControl({
                 id="restart-voice-flow-btn"
                 className="studio-action-button btn-restart-live"
                 onClick={onRestartSetup}
-                title="Restart Selection from Step 1: Language"
+                title="Restart Selection to Defaults"
               >
                 <RotateCcw size={11} />
                 <span>Restart</span>
@@ -776,307 +657,305 @@ export default function VoiceSelectorControl({
             </div>
           </div>
 
-          {/* 2. DYNAMIC SELECTION OPTIONS AREA (Strict Step-by-Step Flow: 1. Lang/Region, 2. Slang, 3. Voice, 4. Tone) */}
-          <div className="studio-options-singleline-container">
-            {/* STEP 1: LANGUAGE SELECTION */}
-            {currentStep === 'language' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag">Step 1 of 5</span>
-                  <span className="selection-label">Select Language / மொழியைத் தேர்ந்தெடுக்கவும்:</span>
+          {/* 3. NEAT 5-DROPDOWN GRID: LANGUAGE, COUNTRY, SLANG, VOICE, TONE */}
+          <div className="voice-dropdowns-grid" ref={dropdownGridRef}>
+            {/* DROPDOWN 1: SELECT LANGUAGE */}
+            <div className={`voice-dropdown-box ${openDropdown === 'language' ? 'is-active-dropdown' : ''}`}>
+              <span className="voice-dropdown-label">
+                <Globe size={13} className="text-purple" />
+                <span>Language / மொழி</span>
+              </span>
+              <button
+                type="button"
+                id="dropdown-btn-language"
+                className={`voice-dropdown-trigger ${openDropdown === 'language' ? 'trigger-open' : ''}`}
+                onClick={() => toggleDropdown('language')}
+                aria-expanded={openDropdown === 'language'}
+                title="Click to choose Language"
+              >
+                <div className="dropdown-trigger-content">
+                  <span className="dropdown-flag-icon">{currentLang.flag}</span>
+                  <span className="dropdown-trigger-title">{currentLang.name}</span>
+                  <span className="dropdown-trigger-sub">({currentLang.nativeName})</span>
                 </div>
-                <div className="chips-wrap-grid">
-                  {SUPPORTED_LANGUAGES.map((lang) => {
-                    const isSelected = config.language === lang.id;
-                    return (
-                      <button
-                        key={lang.id}
-                        type="button"
-                        id={`lang-btn-${lang.id}`}
-                        className={`clean-selection-chip chip-lang ${isSelected ? 'selected-chip' : ''}`}
-                        onClick={() => onSelectLanguage(lang.id)}
-                        title={`Select ${lang.name} (${lang.nativeName})`}
-                      >
-                        <span className="chip-flag-icon">{lang.flag}</span>
-                        <div className="chip-text-content">
-                          <span className="chip-label-primary">{lang.name}</span>
-                          <span className="chip-label-sub">{lang.nativeName}</span>
-                        </div>
-                        {isSelected && <Check size={13} className="chip-check text-emerald" />}
-                      </button>
-                    );
-                  })}
+                <span className="dropdown-arrow-icon" aria-hidden="true">
+                  {openDropdown === 'language' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+
+              {openDropdown === 'language' && (
+                <div className="voice-dropdown-menu animate-fade-in" id="menu-language">
+                  <div className="dropdown-menu-header">Select Language ({SUPPORTED_LANGUAGES.length})</div>
+                  <div className="dropdown-menu-scroll">
+                    {SUPPORTED_LANGUAGES.map((lang) => {
+                      const isSelected = config.language === lang.id;
+                      return (
+                        <button
+                          key={lang.id}
+                          type="button"
+                          className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
+                          onClick={() => {
+                            onSelectLanguage(lang.id);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <span className="option-flag">{lang.flag}</span>
+                          <div className="option-details">
+                            <span className="option-primary">{lang.name}</span>
+                            <span className="option-secondary">{lang.nativeName}</span>
+                          </div>
+                          {isSelected && <Check size={14} className="option-check text-emerald" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* STEP 2: REGION / COUNTRY SELECTION */}
-            {currentStep === 'region' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag">Step 2 of 5</span>
-                  <span className="selection-label">Select Country or Region for {currentLang.name}:</span>
-                  <button 
-                    type="button" 
-                    className="step-back-link" 
-                    onClick={() => onSetStep('language')}
-                    title="Back to Step 1: Language"
-                  >
-                    <ChevronLeft size={12} /> Language
-                  </button>
+            {/* DROPDOWN 2: SELECT COUNTRY / REGION */}
+            <div className={`voice-dropdown-box ${openDropdown === 'region' ? 'is-active-dropdown' : ''}`}>
+              <span className="voice-dropdown-label">
+                <MapPin size={13} className="text-blue" />
+                <span>Country / நாடு</span>
+              </span>
+              <button
+                type="button"
+                id="dropdown-btn-region"
+                className={`voice-dropdown-trigger ${openDropdown === 'region' ? 'trigger-open' : ''}`}
+                onClick={() => toggleDropdown('region')}
+                aria-expanded={openDropdown === 'region'}
+                title="Click to choose Country or Region"
+              >
+                <div className="dropdown-trigger-content">
+                  <MapPin size={13} className="text-blue" />
+                  <span className="dropdown-trigger-title">{currentRegion.name}</span>
                 </div>
-                <div className="chips-wrap-grid">
-                  {currentLang.regions.map((reg) => {
-                    const isSelected = (config.region || currentRegion.id) === reg.id;
-                    return (
-                      <button
-                        key={reg.id}
-                        type="button"
-                        id={`region-btn-${reg.id}`}
-                        className={`clean-selection-chip chip-region ${isSelected ? 'selected-chip' : ''}`}
-                        onClick={() => onSelectRegion(reg.id)}
-                        title={`Select ${reg.name}`}
-                      >
-                        <MapPin size={13} className="chip-pin-icon text-blue" />
-                        <div className="chip-text-content">
-                          <span className="chip-label-primary">{reg.name.split(' (')[0]}</span>
-                          {reg.name.includes('(') && (
-                            <span className="chip-label-sub">({reg.name.split('(')[1]}</span>
-                          )}
-                        </div>
-                        {isSelected && <Check size={13} className="chip-check text-emerald" />}
-                      </button>
-                    );
-                  })}
+                <span className="dropdown-arrow-icon" aria-hidden="true">
+                  {openDropdown === 'region' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+
+              {openDropdown === 'region' && (
+                <div className="voice-dropdown-menu animate-fade-in" id="menu-region">
+                  <div className="dropdown-menu-header">Select Country for {currentLang.name}</div>
+                  <div className="dropdown-menu-scroll">
+                    {currentLang.regions.map((reg) => {
+                      const isSelected = (config.region || currentRegion.id) === reg.id;
+                      return (
+                        <button
+                          key={reg.id}
+                          type="button"
+                          className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
+                          onClick={() => {
+                            onSelectRegion(reg.id);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <MapPin size={13} className="text-blue" />
+                          <div className="option-details">
+                            <span className="option-primary">{reg.name.split(' (')[0]}</span>
+                            {reg.name.includes('(') && (
+                              <span className="option-secondary">({reg.name.split('(')[1]}</span>
+                            )}
+                          </div>
+                          {isSelected && <Check size={14} className="option-check text-emerald" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* STEP 3: SLANG / DIALECT SELECTION */}
-            {currentStep === 'slang' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag">Step 3 of 5</span>
-                  <span className="selection-label">Select {currentLang.name} Dialect / Slang Style:</span>
-                  <button 
-                    type="button" 
-                    className="step-back-link" 
-                    onClick={() => onSetStep('region')}
-                    title="Back to Step 2: Country"
-                  >
-                    <ChevronLeft size={12} /> Country
-                  </button>
+            {/* DROPDOWN 3: SELECT SLANG / DIALECT */}
+            <div className={`voice-dropdown-box ${openDropdown === 'slang' ? 'is-active-dropdown' : ''}`}>
+              <span className="voice-dropdown-label">
+                <Radio size={13} className="text-cyan" />
+                <span>Slang / வழக்கு</span>
+              </span>
+              <button
+                type="button"
+                id="dropdown-btn-slang"
+                className={`voice-dropdown-trigger ${openDropdown === 'slang' ? 'trigger-open' : ''}`}
+                onClick={() => toggleDropdown('slang')}
+                aria-expanded={openDropdown === 'slang'}
+                title="Click to choose Slang / Dialect"
+              >
+                <div className="dropdown-trigger-content">
+                  <Radio size={13} className="text-cyan" />
+                  <span className="dropdown-trigger-title">{currentSlang.name}</span>
                 </div>
-                <div className="chips-wrap-grid">
-                  {currentLang.slangs.map((slang) => {
-                    const isSelected = (config.slang || currentSlang.id) === slang.id;
-                    return (
-                      <button
-                        key={slang.id}
-                        type="button"
-                        id={`slang-btn-${slang.id}`}
-                        className={`clean-selection-chip chip-slang ${isSelected ? 'selected-chip' : ''}`}
-                        onClick={() => onSelectSlang(slang.id)}
-                        title={slang.description}
-                      >
-                        <Radio size={13} className="chip-radio-icon text-cyan" />
-                        <div className="chip-text-content">
-                          <span className="chip-label-primary">{slang.name}</span>
-                          <span className="chip-label-sub">{slang.badge}</span>
-                        </div>
-                        {isSelected && <Check size={13} className="chip-check text-emerald" />}
-                      </button>
-                    );
-                  })}
+                <span className="dropdown-arrow-icon" aria-hidden="true">
+                  {openDropdown === 'slang' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+
+              {openDropdown === 'slang' && (
+                <div className="voice-dropdown-menu animate-fade-in" id="menu-slang">
+                  <div className="dropdown-menu-header">{currentLang.name} Dialect / Slang ({currentLang.slangs.length})</div>
+                  <div className="dropdown-menu-scroll">
+                    {currentLang.slangs.map((slang) => {
+                      const isSelected = (config.slang || currentSlang.id) === slang.id;
+                      return (
+                        <button
+                          key={slang.id}
+                          type="button"
+                          className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
+                          onClick={() => {
+                            onSelectSlang(slang.id);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <Radio size={13} className="text-cyan" />
+                          <div className="option-details">
+                            <span className="option-primary">{slang.name}</span>
+                            <span className="option-secondary">{slang.badge}</span>
+                          </div>
+                          {isSelected && <Check size={14} className="option-check text-emerald" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* STEP 4: VOICE MODEL SELECTION (Strictly 3 options: Male Voice, Female Voice, Own Voice) */}
-            {currentStep === 'voice' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag">Step 4 of 5</span>
-                  <span className="selection-label">Select Voice Model / குரல் மாதிரியைத் தேர்ந்தெடுக்கவும்:</span>
-                  <button 
-                    type="button" 
-                    className="step-back-link" 
-                    onClick={() => onSetStep('slang')}
-                    title="Back to Step 3: Slang"
-                  >
-                    <ChevronLeft size={12} /> Slang
-                  </button>
-                </div>
-                <div className="chips-wrap-grid voice-selection-grid">
-                  {canonicalVoices.map((v) => {
-                    const isSelected = (config.voice === v.id) || (currentVoice.id === v.id);
-                    const isUserVoice = v.id === 'user';
-
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        id={`voice-btn-${v.id}`}
-                        className={`clean-selection-chip chip-voice ${isUserVoice ? 'chip-voice-user' : ''} ${isSelected ? 'selected-chip' : ''}`}
-                        onClick={() => {
-                          onSelectVoice(v.id);
-                          if (isUserVoice && !uploadedVoiceFile) {
-                            onOpenVoiceModal();
-                          }
-                        }}
-                        title={v.displayName}
-                      >
-                        <span className="chip-voice-icon-box">
-                          {isUserVoice ? (
-                            <UploadCloud size={16} className="text-emerald" />
-                          ) : v.id === 'male' ? (
-                            <User size={16} className="text-blue" />
-                          ) : (
-                            <User size={16} className="text-purple" />
-                          )}
-                        </span>
-                        <div className="chip-text-content">
-                          <span className="chip-label-primary">{v.displayName}</span>
-                        </div>
-                        {isUserVoice && uploadedVoiceFile && (
-                          <span className="chip-badge-tag text-emerald">Ready</span>
-                        )}
-                        {isSelected && <Check size={14} className="chip-check text-emerald" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 5: VOICE TONE SELECTION (Zero emojis, static UI icons, localized labels) */}
-            {currentStep === 'emotion' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag">Step 5 of 5</span>
-                  <span className="selection-label">Select Voice Tone / குரல் பாணியைத் தேர்ந்தெடுக்கவும்:</span>
-                  <button 
-                    type="button" 
-                    className="step-back-link" 
-                    onClick={() => onSetStep('voice')}
-                    title="Back to Step 4: Voice"
-                  >
-                    <ChevronLeft size={12} /> Voice
-                  </button>
-                </div>
-                <div className="chips-wrap-grid emotion-selection-grid">
-                  {SUPPORTED_EMOTIONS.map((emo) => {
-                    const isSelected = (config.emotion || 'default') === emo.id;
-                    const ToneIcon = TONE_ICONS[emo.id] || Sliders;
-                    const localizedLabel = toneLangDict[emo.id] || emo.name;
-
-                    return (
-                      <button
-                        key={emo.id}
-                        type="button"
-                        id={`emotion-btn-${emo.id}`}
-                        className={`clean-selection-chip chip-emotion emotion-${emo.id} ${isSelected ? 'selected-chip' : ''}`}
-                        onClick={() => onSelectEmotion(emo.id)}
-                        title={localizedLabel}
-                      >
-                        <span className="chip-tone-icon-box">
-                          <ToneIcon size={15} className={`tone-ui-icon tone-icon-${emo.id}`} />
-                        </span>
-                        <div className="chip-text-content">
-                          <span className="chip-label-primary">{localizedLabel}</span>
-                        </div>
-                        {isSelected && <Check size={13} className="chip-check text-emerald" />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Speech Speed control located directly under Tone options */}
-                {renderSpeechSpeedBox()}
-              </div>
-            )}
-
-            {/* COMPLETED STATE: QUICK ACTIVE SUMMARY & NEAT SPEECH SPEED BOX */}
-            {currentStep === 'completed' && (
-              <div className="step-selection-row animate-fade-in">
-                <div className="step-selection-header-row">
-                  <span className="step-indicator-tag tag-ready">Ready</span>
-                  <span className="selection-label">Active Setup (Click any to adjust):</span>
-                </div>
-                <div className="chips-wrap-grid">
-                  <button 
-                    type="button" 
-                    className="clean-selection-chip chip-summary"
-                    onClick={() => onSetStep('language')}
-                    title="Change Language (Step 1)"
-                  >
-                    <Globe size={12} className="text-purple" />
-                    <span>{currentLang.flag} {currentLang.name}</span>
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="clean-selection-chip chip-summary"
-                    onClick={() => onSetStep('region')}
-                    title="Change Country (Step 2)"
-                  >
-                    <MapPin size={12} className="text-blue" />
-                    <span>{currentRegion.name.split(' (')[0]}</span>
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="clean-selection-chip chip-summary"
-                    onClick={() => onSetStep('slang')}
-                    title="Change Slang (Step 3)"
-                  >
-                    <Radio size={12} className="text-cyan" />
-                    <span>{currentSlang.name}</span>
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="clean-selection-chip chip-summary"
-                    onClick={() => onSetStep('voice')}
-                    title="Change Voice (Step 4)"
-                  >
-                    <Volume2 size={12} className="text-emerald" />
-                    <span>{currentVoiceLabel}</span>
-                  </button>
-
-                  <button 
-                    type="button" 
-                    className="clean-selection-chip chip-summary chip-emotion-summary"
-                    onClick={() => onSetStep('emotion')}
-                    title="Change Voice Tone (Step 5)"
-                  >
-                    {(() => {
-                      const SummaryToneIcon = TONE_ICONS[currentEmotion.id] || Sliders;
-                      return <SummaryToneIcon size={12} className="text-amber" />;
-                    })()}
-                    <span>{currentEmotionLabel}</span>
-                  </button>
-
-                  {(config.voice === 'user' || currentVoice.id === 'user') && (
-                    <button 
-                      type="button" 
-                      className="clean-selection-chip chip-upload-btn"
-                      onClick={onOpenVoiceModal}
-                      title="Upload / Change Voice Sample"
-                    >
-                      <UploadCloud size={12} />
-                      <span>{uploadedVoiceFile ? 'Sample: ' + uploadedVoiceFile.name.slice(0, 10) : 'Upload Sample'}</span>
-                    </button>
+            {/* DROPDOWN 4: SELECT VOICE */}
+            <div className={`voice-dropdown-box ${openDropdown === 'voice' ? 'is-active-dropdown' : ''}`}>
+              <span className="voice-dropdown-label">
+                <Volume2 size={13} className="text-emerald" />
+                <span>Voice / குரல்</span>
+              </span>
+              <button
+                type="button"
+                id="dropdown-btn-voice"
+                className={`voice-dropdown-trigger ${openDropdown === 'voice' ? 'trigger-open' : ''}`}
+                onClick={() => toggleDropdown('voice')}
+                aria-expanded={openDropdown === 'voice'}
+                title="Click to choose Voice"
+              >
+                <div className="dropdown-trigger-content">
+                  {config.voice === 'user' ? (
+                    <UploadCloud size={14} className="text-emerald" />
+                  ) : config.voice === 'male' ? (
+                    <User size={14} className="text-blue" />
+                  ) : (
+                    <User size={14} className="text-purple" />
+                  )}
+                  <span className="dropdown-trigger-title">{currentVoiceLabel}</span>
+                  {config.voice === 'user' && uploadedVoiceFile && (
+                    <span className="dropdown-ready-tag">Ready</span>
                   )}
                 </div>
+                <span className="dropdown-arrow-icon" aria-hidden="true">
+                  {openDropdown === 'voice' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
 
-                {/* Speech Speed control in completed active setup */}
-                {renderSpeechSpeedBox()}
-              </div>
-            )}
+              {openDropdown === 'voice' && (
+                <div className="voice-dropdown-menu animate-fade-in" id="menu-voice">
+                  <div className="dropdown-menu-header">Select Voice Model</div>
+                  <div className="dropdown-menu-scroll">
+                    {canonicalVoices.map((v) => {
+                      const isSelected = config.voice === v.id || currentVoice.id === v.id;
+                      const isUserVoice = v.id === 'user';
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
+                          onClick={() => {
+                            onSelectVoice(v.id);
+                            setOpenDropdown(null);
+                            if (isUserVoice && !uploadedVoiceFile) {
+                              onOpenVoiceModal();
+                            }
+                          }}
+                        >
+                          {isUserVoice ? (
+                            <UploadCloud size={14} className="text-emerald" />
+                          ) : v.id === 'male' ? (
+                            <User size={14} className="text-blue" />
+                          ) : (
+                            <User size={14} className="text-purple" />
+                          )}
+                          <div className="option-details">
+                            <span className="option-primary">{v.displayName}</span>
+                            {isUserVoice && (
+                              <span className="option-secondary">
+                                {uploadedVoiceFile ? `Sample: ${uploadedVoiceFile.name.slice(0, 15)}` : 'Click to record or upload voice sample'}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && <Check size={14} className="option-check text-emerald" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* DROPDOWN 5: SELECT TONE / EMOTION */}
+            <div className={`voice-dropdown-box ${openDropdown === 'emotion' ? 'is-active-dropdown' : ''}`}>
+              <span className="voice-dropdown-label">
+                <Sliders size={13} className="text-amber" />
+                <span>Tone / பாணி</span>
+              </span>
+              <button
+                type="button"
+                id="dropdown-btn-emotion"
+                className={`voice-dropdown-trigger ${openDropdown === 'emotion' ? 'trigger-open' : ''}`}
+                onClick={() => toggleDropdown('emotion')}
+                aria-expanded={openDropdown === 'emotion'}
+                title="Click to choose Voice Tone"
+              >
+                <div className="dropdown-trigger-content">
+                  <CurrentEmotionIcon size={14} className="text-amber" />
+                  <span className="dropdown-trigger-title">{currentEmotionLabel}</span>
+                </div>
+                <span className="dropdown-arrow-icon" aria-hidden="true">
+                  {openDropdown === 'emotion' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </span>
+              </button>
+
+              {openDropdown === 'emotion' && (
+                <div className="voice-dropdown-menu animate-fade-in" id="menu-emotion">
+                  <div className="dropdown-menu-header">Select Voice Tone ({SUPPORTED_EMOTIONS.length})</div>
+                  <div className="dropdown-menu-scroll">
+                    {SUPPORTED_EMOTIONS.map((emo) => {
+                      const isSelected = (config.emotion || 'default') === emo.id;
+                      const ToneIcon = TONE_ICONS[emo.id] || Sliders;
+                      const localizedLabel = toneLangDict[emo.id] || emo.name;
+                      return (
+                        <button
+                          key={emo.id}
+                          type="button"
+                          className={`voice-dropdown-option ${isSelected ? 'option-selected' : ''}`}
+                          onClick={() => {
+                            onSelectEmotion(emo.id);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <ToneIcon size={14} className="text-amber" />
+                          <div className="option-details">
+                            <span className="option-primary">{localizedLabel}</span>
+                          </div>
+                          {isSelected && <Check size={14} className="option-check text-emerald" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 4. QUICK CONVERSATIONAL PROMPTS BAR */}
+          {/* 4. SPEECH SPEED CONTROLS */}
+          {renderSpeechSpeedBox()}
+
+          {/* 5. QUICK CONVERSATIONAL PROMPTS BAR */}
           <div className="studio-prompts-bar">
             <div className="prompts-intro">
               <Sparkles size={11} className="text-cyan" />

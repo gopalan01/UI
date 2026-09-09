@@ -10,9 +10,8 @@ import {
   CheckCheck,
   Mic,
   Globe,
-  X,
-  ChevronDown,
-  ChevronUp
+  Sliders,
+  X
 } from 'lucide-react';
 
 export default function ConversationPanel({
@@ -27,7 +26,8 @@ export default function ConversationPanel({
   currentSlang = 'Kongu Tamil',
   onOpenChangeLanguage,
   isCollapsed = true,
-  onToggleCollapse
+  onToggleCollapse,
+  onSwitchToHero
 }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -40,66 +40,73 @@ export default function ConversationPanel({
   }, [messages.length, isCollapsed, isDrawerMode]);
 
   return (
-    <div className={`aurqo-chat-panel ${isDrawerMode ? 'drawer-mode' : ''} ${!isDrawerMode && isCollapsed ? 'is-collapsed' : 'is-expanded'}`}>
-      {/* Fixed Chat Header */}
-      <div 
-        className={`chat-panel-header ${!isDrawerMode && isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
-        onClick={!isDrawerMode ? onToggleCollapse : undefined}
-        style={!isDrawerMode ? { cursor: 'pointer' } : undefined}
-        title={!isDrawerMode ? (isCollapsed ? "Click to expand Voice Conversation (▼)" : "Click to collapse Voice Conversation (▲)") : undefined}
-      >
+    <div className={`aurqo-chat-panel ${isDrawerMode ? 'drawer-mode' : ''} is-expanded`}>
+      {/* Fixed Chat Header (Permanently Open, Non-collapsing) */}
+      <div className="chat-panel-header is-expanded">
         <div className="chat-header-title-group">
           <div className="chat-header-icon-box">
             <MessageSquare size={17} />
           </div>
           <div className="chat-header-info">
             <h2 className="chat-header-heading">Voice Conversation</h2>
-            {(!isCollapsed || isDrawerMode) && (
-              <div className="chat-header-meta-row">
-                <span className="chat-header-sub">
-                  {messages.length} {messages.length === 1 ? 'exchange' : 'exchanges'}
-                </span>
-              </div>
-            )}
+            <div className="chat-header-meta-row">
+              <span className="chat-header-sub">
+                {messages.length} {messages.length === 1 ? 'exchange' : 'exchanges'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Right side controls: Action Buttons + Permanent Toggle Arrow */}
+        {/* Right side controls: Action Buttons (Restart, Clear) */}
         <div className="chat-header-right-slot">
-          {/* Action buttons (Restart, Clear) shown only when expanded or in drawer */}
-          {(!isCollapsed || isDrawerMode) && (
-            <div className="chat-header-actions" onClick={(e) => e.stopPropagation()}>
+          <div className="chat-header-actions">
+            {onSwitchToHero && (
               <button
-                id="restart-conversation-btn"
+                id="switch-to-hero-btn"
                 type="button"
-                className="chat-action-btn restart-btn"
+                className="chat-action-btn studio-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onRestartConversation) onRestartConversation();
+                  onSwitchToHero();
                 }}
-                title="Restart Selection from Step 1"
-                aria-label="Restart Conversation"
+                title="Switch to Hero / Voice Studio View"
+                aria-label="Studio Mode"
               >
-                <RotateCcw size={13} />
-                <span className="action-btn-text">Restart</span>
+                <Sliders size={13} />
+                <span className="action-btn-text">Studio</span>
               </button>
+            )}
 
-              <button
-                id="clear-history-btn"
-                type="button"
-                className="chat-action-btn clear-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onClearHistory) onClearHistory();
-                }}
-                title="Clear Chat Messages"
-                aria-label="Clear History"
-              >
-                <Trash2 size={13} />
-                <span className="action-btn-text">Clear</span>
-              </button>
-            </div>
-          )}
+            <button
+              id="restart-conversation-btn"
+              type="button"
+              className="chat-action-btn restart-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onRestartConversation) onRestartConversation();
+              }}
+              title="Restart Selection from Step 1"
+              aria-label="Restart Conversation"
+            >
+              <RotateCcw size={13} />
+              <span className="action-btn-text">Restart</span>
+            </button>
+
+            <button
+              id="clear-history-btn"
+              type="button"
+              className="chat-action-btn clear-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onClearHistory) onClearHistory();
+              }}
+              title="Clear Chat Messages"
+              aria-label="Clear History"
+            >
+              <Trash2 size={13} />
+              <span className="action-btn-text">Clear</span>
+            </button>
+          </div>
 
           {isDrawerMode && (
             <button
@@ -114,36 +121,11 @@ export default function ConversationPanel({
               <X size={18} />
             </button>
           )}
-
-          {/* PERMANENT TOP-RIGHT DROPDOWN / DROPUP ARROW BUTTON */}
-          {!isDrawerMode && (
-            <button
-              id="toggle-voice-conversation-collapse-btn"
-              type="button"
-              className={`chat-action-btn toggle-collapse-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onToggleCollapse) onToggleCollapse();
-              }}
-              title={isCollapsed ? "Expand Voice Conversation (▼)" : "Collapse Voice Conversation (▲)"}
-              aria-label={isCollapsed ? "Expand Voice Conversation" : "Collapse Voice Conversation"}
-              aria-expanded={!isCollapsed}
-            >
-              {isCollapsed ? (
-                <ChevronDown size={17} className="collapse-arrow-icon" />
-              ) : (
-                <ChevronUp size={17} className="collapse-arrow-icon" />
-              )}
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Collapsible Content Area */}
-      <div 
-        className={`chat-panel-collapsible-wrapper ${!isDrawerMode && isCollapsed ? 'is-collapsed' : 'is-expanded'}`}
-        aria-hidden={!isDrawerMode && isCollapsed}
-      >
+      {/* Permanently Fixed Content Area */}
+      <div className="chat-panel-collapsible-wrapper is-expanded">
         <div className="chat-panel-collapsible-inner">
           {/* Scrollable Message History Area */}
           <div className="chat-messages-container voice-only-mode" ref={scrollContainerRef}>

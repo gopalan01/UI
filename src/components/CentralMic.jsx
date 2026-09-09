@@ -27,22 +27,10 @@ export default function CentralMic({
       className={`central-mic-container mic-state-${state} ${isListening ? 'is-listening' : ''} ${isSpeaking ? 'is-speaking' : ''}`} 
       aria-label="Interactive Microphone Stage"
     >
-      {/* Clean Acoustic Wave Ripple (Subtle & Elegant Echo on Idle / Active) */}
-      <div className="mic-clean-echo-container">
-        <div className={`mic-echo-wave wave-1 ${isListening ? 'echo-listening' : isSpeaking ? 'echo-speaking' : 'echo-idle'}`} />
-        <div className={`mic-echo-wave wave-2 ${isListening ? 'echo-listening' : isSpeaking ? 'echo-speaking' : 'echo-idle'}`} />
-      </div>
-
       {/* Main Mic Interactive Stage */}
       <div className="mic-interactive-stage">
-        {/* Soft Fluid Background Aura */}
+        {/* Clean Soft Ambient Back-Glow (No harsh outer circle rings or ripple animations) */}
         <div className={`mic-backdrop-glow ${isListening ? 'glow-listening' : isSpeaking ? 'glow-speaking' : state === 'thinking' ? 'glow-thinking' : 'glow-idle'}`} />
-
-        {/* Clean Luminous Orbit Ring (Ultra-crisp, elegant, non-cluttered) */}
-        <div className="mic-luminous-orbit">
-          <div className="mic-orbit-arc" />
-          <div className="mic-orbit-node" />
-        </div>
 
         {/* Premium Central Glass Mic Capsule Button */}
         <button
@@ -54,19 +42,10 @@ export default function CentralMic({
         >
           {/* Subtle Inner Glass Sheen */}
           <div className="mic-btn-inner-glow" />
-          <div className="mic-conic-border-glow" />
 
           {isListening ? (
             <div className="mic-active-content">
-              {/* Clean Modern Equalizer Bars inside mic button when listening */}
-              <div className="mic-inner-equalizer">
-                <span className="eq-bar bar-1" />
-                <span className="eq-bar bar-2" />
-                <span className="eq-bar bar-3" />
-                <span className="eq-bar bar-4" />
-                <span className="eq-bar bar-5" />
-              </div>
-              <Square size={26} className="mic-stop-icon" />
+              <Square size={28} className="mic-stop-icon" />
               <span className="mic-action-caption">Stop</span>
             </div>
           ) : isSpeaking ? (
@@ -78,7 +57,6 @@ export default function CentralMic({
             <div className="mic-idle-content">
               <div className="mic-icon-wrapper">
                 <Mic size={36} className="mic-svg-icon" />
-                <span className="mic-sparkle-ping" />
               </div>
               <span className="mic-action-caption">Tap to Speak</span>
             </div>

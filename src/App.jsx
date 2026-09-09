@@ -12,7 +12,7 @@ import UserProfileModal from './components/UserProfileModal';
 import VoiceSelectorControl from './components/VoiceSelectorControl';
 import HistoryDropdownMenu from './components/HistoryDropdownMenu';
 import CompactChangeLanguageModal from './components/CompactChangeLanguageModal';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MessageSquare } from 'lucide-react';
 
 import { 
   SUPPORTED_LANGUAGES, 
@@ -118,9 +118,10 @@ export default function App() {
   const [isCompactChangeLangOpen, setIsCompactChangeLangOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
-  const [isVoicePanelCollapsed, setIsVoicePanelCollapsed] = useState(true);
+  const [isVoicePanelCollapsed, setIsVoicePanelCollapsed] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [activePlayingIndex, setActivePlayingIndex] = useState(null);
+  const [hasStartedVoice, setHasStartedVoice] = useState(false);
 
   // Update & persist User Name
   const handleUpdateUserName = (newName) => {
@@ -557,6 +558,7 @@ export default function App() {
     localStorage.setItem('aurqo_speech_speed', 'normal');
 
     setCurrentConversationId(null);
+    setHasStartedVoice(false);
 
     const restartGreeting = "வணக்கம்! தமிழி (THAMILI) ஏஐ ஆடியோ ஸ்டுடியோ மீண்டும் துவக்கப்பட்டது. முதலில் உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்.";
     setMessages([
@@ -597,6 +599,7 @@ export default function App() {
     }
 
     setCurrentStep('completed');
+    setHasStartedVoice(true);
     setIsHistoryMenuOpen(false);
   };
 
@@ -627,6 +630,7 @@ export default function App() {
     setCurrentConversationId(null);
     setMessages([]);
     setCurrentStep('completed');
+    setHasStartedVoice(false);
   };
 
   // Apply language change from CompactChangeLanguageModal (PRESERVES EXISTING MESSAGES)
@@ -681,6 +685,10 @@ export default function App() {
   // Handle Speech Result: STRICTLY RESPONDS IN USER'S SELECTED LANGUAGE
   const handleSpeechResult = (queryText) => {
     if (!queryText || !queryText.trim()) return;
+
+    if (!hasStartedVoice) {
+      setHasStartedVoice(true);
+    }
 
     setErrorMessage('');
     addMessage('user', queryText.trim(), '', config.language);
@@ -749,6 +757,11 @@ export default function App() {
 
   // Microphone Click Handler (Start / Stop)
   const handleMicClick = () => {
+    // If conversation mode is not active yet, activate it!
+    if (!hasStartedVoice) {
+      setHasStartedVoice(true);
+    }
+
     // If currently speaking, stop voice playback
     if (aiState === 'speaking') {
       speechAudioEngine.stop();
@@ -905,87 +918,165 @@ export default function App() {
         />
 
         {/* Content Body: Fixed Center AI Stage + WhatsApp Style Chat Panel */}
-        <main className="aurqo-content-body">
-          {/* CENTER FIXED STAGE */}
-          <section className="fixed-center-stage" aria-label="AI Audio Interaction Core">
-            <div className="fixed-stage-inner">
-              {/* Brand Center Tag */}
-              <div className="center-hero-badge">
-                <span className="hero-badge-title">One AI. <strong>Infinite Possibilities.</strong></span>
-              </div>
-
-              {/* DUAL CORE HERO ROW (AI Orb on Left, Central Mic on Right, Energy Bridge in Center) */}
-              <div className="hero-interactive-row">
-                {/* Left: Holographic 3D AI Character Orb */}
-                <div className="hero-left-character">
-                  <AICharacter state={aiState} customMessage={errorMessage} emotion={config.emotion || 'default'} />
+        <main className={`aurqo-content-body ${hasStartedVoice ? 'conversation-active' : 'hero-active'}`}>
+          {hasStartedVoice ? (
+            /* CONVERSATION ACTIVE MODE:
+               1. Voice Conversation is at the TOP (flex: 1, scrollable chat with full controls)
+               2. Both Animation Buttons (AI Character Orb + Central Mic Tap to Speak) are at the BOTTOM dock */
+            <section className="fixed-center-stage mode-conversation" aria-label="AI Audio Interaction Core">
+              <div className="conversation-stage-container">
+                {/* TOP: Voice Conversation */}
+                <div className="stage-top-conversation">
+                  <ConversationPanel
+                    messages={messages}
+                    onClearHistory={handleClearHistory}
+                    onRestartConversation={handleRestartConversation}
+                    onReplayAudio={handleReplayAudio}
+                    activePlayingIndex={activePlayingIndex}
+                    currentLanguage={config.language}
+                    currentSlang={currentSlangObj.name}
+                    onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
+                    isCollapsed={false}
+                    onSwitchToHero={() => setHasStartedVoice(false)}
+                  />
                 </div>
 
-                {/* Center: Dynamic Energy Connection Bridge */}
-                <div className={`hero-connection-bridge bridge-${aiState}`} aria-hidden="true">
-                  <div className="bridge-line" />
-                  <div className="bridge-pulse-node">
-                    <Sparkles size={11} className="bridge-icon" />
+                {/* BOTTOM: Both Animation Buttons + Visualizer Dock */}
+                <div className="stage-bottom-animation-dock">
+                  {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
+                  <div className="dock-visualizer-wrapper">
+                    <AudioVisualizer 
+                      state={aiState} 
+                      isListening={aiState === 'listening'} 
+                      isSpeaking={aiState === 'speaking'} 
+                    />
+                  </div>
+
+                  {/* The Two Animation Buttons Row (AI Character on Left, Energy Bridge in Center, Central Mic on Right) */}
+                  <div className="dock-interactive-row">
+                    {/* Left: Holographic 3D AI Character Orb */}
+                    <div className="dock-character-col">
+                      <AICharacter state={aiState} customMessage={errorMessage} emotion={config.emotion || 'default'} />
+                    </div>
+
+                    {/* Center: Dynamic Energy Connection Bridge */}
+                    <div className={`dock-connection-bridge hero-connection-bridge bridge-${aiState}`} aria-hidden="true">
+                      <div className="bridge-line" />
+                      <div className="bridge-pulse-node">
+                        <Sparkles size={11} className="bridge-icon" />
+                      </div>
+                    </div>
+
+                    {/* Right: Interactive Central Microphone Button */}
+                    <div className="dock-mic-col">
+                      <CentralMic
+                        isListening={aiState === 'listening'}
+                        isSpeaking={aiState === 'speaking'}
+                        state={aiState}
+                        onMicClick={handleMicClick}
+                        onStopSpeech={handleStopSpeech}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : (
+            /* HERO SETUP MODE (Before Tap to Speak):
+               1. Top Hero Badge
+               2. Both Animation Buttons in Center
+               3. Realtime Audio Visualizer
+               (Zero conversation shown initially, clean hero presence!) */
+            <section className="fixed-center-stage mode-hero" aria-label="AI Audio Interaction Core">
+              <div className="fixed-stage-inner">
+                {/* Brand Center Tag */}
+                <div className="center-hero-badge">
+                  <span className="hero-badge-title">One AI. <strong>Infinite Possibilities.</strong></span>
+                </div>
+
+                {/* Resume past conversation pill if messages exist */}
+                {messages && messages.length > 0 && (
+                  <div className="hero-resume-pill-wrapper animate-fade-in">
+                    <button
+                      type="button"
+                      className="hero-resume-pill-btn"
+                      onClick={() => setHasStartedVoice(true)}
+                      title="View active conversation transcript"
+                    >
+                      <MessageSquare size={13} className="text-cyan" />
+                      <span>Resume Conversation ({messages.length} exchanges)</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* DUAL CORE HERO ROW (AI Orb on Left, Central Mic on Right, Energy Bridge in Center) */}
+                <div className="hero-interactive-row">
+                  {/* Left: Holographic 3D AI Character Orb */}
+                  <div className="hero-left-character">
+                    <AICharacter state={aiState} customMessage={errorMessage} emotion={config.emotion || 'default'} />
+                  </div>
+
+                  {/* Center: Dynamic Energy Connection Bridge */}
+                  <div className={`hero-connection-bridge bridge-${aiState}`} aria-hidden="true">
+                    <div className="bridge-line" />
+                    <div className="bridge-pulse-node">
+                      <Sparkles size={11} className="bridge-icon" />
+                    </div>
+                  </div>
+
+                  {/* Right: Interactive Central Microphone Button */}
+                  <div className="hero-right-mic">
+                    <CentralMic
+                      isListening={aiState === 'listening'}
+                      isSpeaking={aiState === 'speaking'}
+                      state={aiState}
+                      onMicClick={handleMicClick}
+                      onStopSpeech={handleStopSpeech}
+                    />
                   </div>
                 </div>
 
-                {/* Right: Interactive Central Microphone Button */}
-                <div className="hero-right-mic">
-                  <CentralMic
-                    isListening={aiState === 'listening'}
-                    isSpeaking={aiState === 'speaking'}
-                    state={aiState}
-                    onMicClick={handleMicClick}
-                    onStopSpeech={handleStopSpeech}
-                  />
+                {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
+                <AudioVisualizer 
+                  state={aiState} 
+                  isListening={aiState === 'listening'} 
+                  isSpeaking={aiState === 'speaking'} 
+                />
+
+                {/* Clean Hero Guidance Caption */}
+                <div className="hero-tap-guidance-pill">
+                  <Sparkles size={12} className="text-cyan" />
+                  <span>Tap to Speak to start voice conversation</span>
                 </div>
               </div>
+            </section>
+          )}
 
-              {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
-              <AudioVisualizer 
-                state={aiState} 
-                isListening={aiState === 'listening'} 
-                isSpeaking={aiState === 'speaking'} 
-              />
-
-              {/* NEAT UNIQUE VOICE & LANGUAGE STUDIO (Manual Selection + Auto-Detection Hybrid) */}
-              <VoiceSelectorControl
-                config={config}
-                currentStep={currentStep}
-                onSetStep={(step) => setCurrentStep(step)}
-                onSelectLanguage={handleSelectLanguage}
-                onSelectRegion={handleSelectRegion}
-                onSelectSlang={handleSelectSlang}
-                onSelectVoice={handleSelectVoice}
-                onSelectEmotion={handleSelectEmotion}
-                onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-                uploadedVoiceFile={uploadedVoiceFile}
-                onTestVoice={handleTestVoice}
-                onRestartSetup={handleRestartConversation}
-                onSelectQuickPrompt={handleSpeechResult}
-                isSpeaking={aiState === 'speaking'}
-                speechSpeed={speechSpeed}
-                onChangeSpeechSpeed={handleChangeSpeechSpeed}
-              />
-            </div>
-          </section>
-
-          {/* RIGHT CONVERSATION PANEL */}
+          {/* RIGHT FIXED PANEL: VOICE & LANGUAGE SETTINGS PERMANENTLY HERE */}
           <aside 
-            className={`conversation-panel-wrapper ${isVoicePanelCollapsed ? 'is-collapsed' : 'is-expanded'}`} 
-            aria-label="Voice Conversation History"
+            className="fixed-settings-sidebar-wrapper" 
+            aria-label="Voice & Language Settings Studio"
           >
-            <ConversationPanel
-              messages={messages}
-              onClearHistory={handleClearHistory}
-              onRestartConversation={handleRestartConversation}
-              onReplayAudio={handleReplayAudio}
-              activePlayingIndex={activePlayingIndex}
-              currentLanguage={config.language}
-              currentSlang={currentSlangObj.name}
-              onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
-              isCollapsed={isVoicePanelCollapsed}
-              onToggleCollapse={() => setIsVoicePanelCollapsed((prev) => !prev)}
+            <VoiceSelectorControl
+              config={config}
+              currentStep={currentStep}
+              onSetStep={(step) => setCurrentStep(step)}
+              onSelectLanguage={handleSelectLanguage}
+              onSelectRegion={handleSelectRegion}
+              onSelectSlang={handleSelectSlang}
+              onSelectVoice={handleSelectVoice}
+              onSelectEmotion={handleSelectEmotion}
+              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+              uploadedVoiceFile={uploadedVoiceFile}
+              onTestVoice={handleTestVoice}
+              onRestartSetup={handleRestartConversation}
+              onSelectQuickPrompt={(promptText) => {
+                setHasStartedVoice(true);
+                handleSpeechResult(promptText);
+              }}
+              isSpeaking={aiState === 'speaking'}
+              speechSpeed={speechSpeed}
+              onChangeSpeechSpeed={handleChangeSpeechSpeed}
             />
           </aside>
         </main>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   Sparkles, 
-  Mic, 
   Cpu, 
   Volume2, 
   UploadCloud, 
@@ -20,7 +19,7 @@ export default function AICharacter({ state = 'idle', customMessage = '', emotio
     },
     listening: {
       label: 'LISTENING...',
-      icon: Mic,
+      icon: Sparkles,
       colorClass: 'state-listening',
       subtext: 'Receiving voice audio stream'
     },
@@ -61,12 +60,6 @@ export default function AICharacter({ state = 'idle', customMessage = '', emotio
 
   return (
     <div className={`ai-character-container ${current.colorClass} emotion-aura-${emotion}`} aria-label={`AI Character: ${current.label}`}>
-      {/* Outer Quantum Wave Energy Rings */}
-      <div className="quantum-energy-aura">
-        <div className="energy-ring ring-1" />
-        <div className="energy-ring ring-2" />
-      </div>
-
       {/* Main 3D Quantum Neural AI Orb */}
       <div className="ai-character-orb">
         {/* Ambient Neural Back Glow */}
@@ -92,19 +85,6 @@ export default function AICharacter({ state = 'idle', customMessage = '', emotio
           <div className="orb-inner-gradient" />
           <div className="orb-hologram-mesh" />
           <div className="orb-quantum-lattice" />
-
-          {/* Equalizer Frequency Bars (Speaking & Listening) */}
-          {(state === 'speaking' || state === 'listening') && (
-            <div className="audio-bars-container">
-              <span className="audio-bar bar-1" />
-              <span className="audio-bar bar-2" />
-              <span className="audio-bar bar-3" />
-              <span className="audio-bar bar-4" />
-              <span className="audio-bar bar-5" />
-              <span className="audio-bar bar-6" />
-              <span className="audio-bar bar-7" />
-            </div>
-          )}
 
           {/* Central AI State Icon */}
           <div className="orb-center-icon">
