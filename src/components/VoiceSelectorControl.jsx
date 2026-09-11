@@ -386,14 +386,15 @@ export default function VoiceSelectorControl({
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(true);
 
   // Step progression ranks:
-  // 1: Language -> 2: Country -> 3: Slang -> 4: Voice -> 5: Tone -> 6: Completed
+  // 1: Language -> 2: Country -> 3: Slang -> 4: Voice -> 5: Tone -> 6: Speed -> 7: Completed
   const STEP_RANKS = {
     language: 1,
     region: 2,
     slang: 3,
     voice: 4,
     emotion: 5,
-    completed: 6
+    speed: 6,
+    completed: 7
   };
 
   const currentRank = STEP_RANKS[currentStep] || 1;
@@ -404,6 +405,7 @@ export default function VoiceSelectorControl({
   const isSlangUnlocked = currentRank >= 3;
   const isVoiceUnlocked = currentRank >= 4;
   const isEmotionUnlocked = currentRank >= 5;
+  const isSpeedUnlocked = currentRank >= 6;
 
   // Active open dropdown: 'language' | 'region' | 'slang' | 'voice' | 'emotion' | null
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -471,10 +473,10 @@ export default function VoiceSelectorControl({
     }
   };
 
-  // 5. Tone Selected -> All 5 steps completed!
+  // 5. Tone Selected -> Advances to Step 6: Speech Speed
   const handleEmotionPick = (emoId) => {
     onSelectEmotion(emoId);
-    if (onSetStep) onSetStep('completed');
+    if (onSetStep) onSetStep('speed');
     setOpenDropdown(null);
   };
 
@@ -582,7 +584,9 @@ export default function VoiceSelectorControl({
       <div className="simple-speed-header">
         <div className="simple-speed-label-group">
           <Zap size={13} className="text-cyan" />
-          <span className="simple-speed-title">Speech Speed / பேச்சு வேகம்</span>
+          <span className="simple-speed-title">
+            {currentStep === 'speed' ? 'Step 6: Speech Speed / பேச்சு வேகம்' : 'Speech Speed / பேச்சு வேகம்'}
+          </span>
         </div>
         <span className="simple-speed-current-tag">
           {speechSpeed === 'slow' ? '0.6x' : speechSpeed === 'fast' ? '1.4x' : '1.0x'}

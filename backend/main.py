@@ -279,6 +279,99 @@ async def handle_conversation(
         }
     }
 
+# ==============================================================================
+# ENDPOINT: POST /transcribe
+# Standalone STT endpoint using Groq Whisper (supports 'auto' language detection)
+# ==============================================================================
+@app.post("/transcribe", tags=["Speech to Text"])
+async def handle_transcribe(
+    audio: UploadFile = File(..., description="User recorded audio file from microphone"),
+    language: str = Form("auto", description="Selected language code or 'auto' for multi-language detection")
+):
+    if not audio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing audio payload. Please record audio before sending."
+        )
+
+    try:
+        audio_bytes = await audio.read()
+    except Exception as exc:
+        logger.error(f"Failed to read audio upload: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not read uploaded audio file."
+        )
+
+    if len(audio_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded audio file is empty (0 bytes)."
+        )
+
+    try:
+        user_transcript = await stt_service.transcribe(
+            audio_bytes=audio_bytes,
+            filename=audio.filename or "recording.webm",
+            content_type=audio.content_type or "audio/webm",
+            language=language
+        )
+        return {
+            "status": "success",
+            "text": user_transcript
+        }
+    except ValueError as val_err:
+        logger.warning(f"STT Validation Notice: {val_err}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(val_err))
+    except Exception as exc:
+        logger.error(f"STT Failure: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Speech recognition service error: {str(exc)}"
+        )
+
+# ==============================================================================
+# ENDPOINT: POST /synthesize
+# Standalone TTS endpoint using Edge-TTS in the chosen language & voice
+# ==============================================================================
+@app.post("/synthesize", tags=["Text to Speech"])
+async def handle_synthesize(
+    text: str = Form(..., description="Text to synthesize into voice audio"),
+    language: str = Form("tamil", description="Selected language"),
+    voice_type: str = Form("female", description="Voice selection: 'male' or 'female'"),
+    tone: str = Form("default", description="Voice tone / emotion"),
+    speech_speed: str = Form("normal", description="Speech speed: 'slow', 'normal', or 'fast'")
+):
+    if not text or not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing text payload to synthesize."
+        )
+
+    clean_lang = language.lower().strip()
+    try:
+        tts_result = await tts_service.synthesize(
+            text=text,
+            language=clean_lang,
+            voice_type=voice_type,
+            tone=tone,
+            speech_speed=speech_speed
+        )
+        return {
+            "status": "success",
+            "audio_base64": tts_result["audio_base64"],
+            "audio_format": tts_result.get("audio_format", "audio/mp3"),
+            "voice_used": tts_result.get("voice_used", "")
+        }
+    except ValueError as val_err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(val_err))
+    except Exception as exc:
+        logger.error(f"TTS Stage Failure: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Voice synthesis service error: {str(exc)}"
+        )
+
 # Runner for direct execution
 if __name__ == "__main__":
     import uvicorn

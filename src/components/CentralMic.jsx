@@ -5,6 +5,7 @@ export default function CentralMic({
   isListening,
   isSpeaking,
   state = 'idle',
+  notice = '',
   onMicClick,
   onStopSpeech
 }) {
@@ -16,6 +17,7 @@ export default function CentralMic({
   };
 
   const getStatusText = () => {
+    if (notice) return notice;
     if (isListening) return 'LISTENING LIVE';
     if (isSpeaking) return 'SPEAKING OUTPUT';
     if (state === 'thinking') return 'PROCESSING INTENT';

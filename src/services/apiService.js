@@ -75,6 +75,78 @@ class ApiService {
 
     return await response.json();
   }
+
+  /**
+   * Transcribe Audio using FastAPI /transcribe (Groq Whisper)
+   */
+  async transcribeAudio(audioBlob, language = 'auto') {
+    if (!audioBlob || audioBlob.size === 0) {
+      throw new Error('No audio recorded to transcribe.');
+    }
+
+    const formData = new FormData();
+    const mimeType = audioBlob.type || 'audio/webm';
+    let ext = 'webm';
+    if (mimeType.includes('wav')) ext = 'wav';
+    else if (mimeType.includes('mp4') || mimeType.includes('m4a')) ext = 'm4a';
+    else if (mimeType.includes('mp3') || mimeType.includes('mpeg')) ext = 'mp3';
+    else if (mimeType.includes('ogg')) ext = 'ogg';
+
+    formData.append('audio', audioBlob, `recording.${ext}`);
+    formData.append('language', language || 'auto');
+
+    const response = await fetch(`${this.baseUrl}/transcribe`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      let errorDetail = `Transcription failed (${response.status})`;
+      try {
+        const errorJson = await response.json();
+        if (errorJson && (errorJson.message || errorJson.detail)) {
+          errorDetail = errorJson.message || errorJson.detail;
+        }
+      } catch (_e) {}
+      throw new Error(errorDetail);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Synthesize Speech using FastAPI /synthesize (Edge-TTS)
+   */
+  async synthesizeSpeech(text, { language = 'tamil', voice = 'female', emotion = 'default', speechSpeed = 'normal' } = {}) {
+    if (!text || !text.trim()) {
+      throw new Error('Empty text provided for synthesis.');
+    }
+
+    const formData = new FormData();
+    formData.append('text', text.trim());
+    formData.append('language', language || 'tamil');
+    formData.append('voice_type', voice || 'female');
+    formData.append('tone', emotion || 'default');
+    formData.append('speech_speed', speechSpeed || 'normal');
+
+    const response = await fetch(`${this.baseUrl}/synthesize`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      let errorDetail = `Synthesis failed (${response.status})`;
+      try {
+        const errorJson = await response.json();
+        if (errorJson && (errorJson.message || errorJson.detail)) {
+          errorDetail = errorJson.message || errorJson.detail;
+        }
+      } catch (_e) {}
+      throw new Error(errorDetail);
+    }
+
+    return await response.json();
+  }
 }
 
 export const apiService = new ApiService();

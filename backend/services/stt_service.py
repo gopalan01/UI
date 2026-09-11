@@ -60,10 +60,14 @@ class STTService:
             raise ValueError(err_msg)
 
         # 2. Lookup language ISO-639-1 code (e.g. 'ta', 'en', 'hi', etc.)
-        lang_info = SUPPORTED_LANGUAGES.get(language.lower(), SUPPORTED_LANGUAGES.get("tamil"))
         iso_lang = None
-        if lang_info and "bcp47" in lang_info:
-            iso_lang = lang_info["bcp47"].split("-")[0]
+        clean_lang = (language or "").lower().strip()
+        if clean_lang and clean_lang not in ["auto", "none", "detect", "all"]:
+            lang_info = SUPPORTED_LANGUAGES.get(clean_lang, SUPPORTED_LANGUAGES.get("tamil"))
+            if lang_info and "bcp47" in lang_info:
+                iso_lang = lang_info["bcp47"].split("-")[0]
+            elif len(clean_lang) == 2:
+                iso_lang = clean_lang
 
         # 3. Resolve API Key
         active_provider = self.provider

@@ -1724,6 +1724,16 @@ export const SUPPORTED_EMOTIONS = [
     description: 'Empathetic, gentle, and soft tone'
   },
   {
+    id: 'friendly',
+    name: 'Friendly',
+    nativeName: 'நட்பான நிலை (Friendly)',
+    icon: '🤝',
+    badge: 'Warm & Friendly',
+    pitchModifier: 1.05,
+    rateModifier: 1.02,
+    description: 'Warm, cordial, friendly, and approachable conversational tone'
+  },
+  {
     id: 'husky',
     name: 'Husky',
     nativeName: 'ஹஸ்கி / கம்பீரம் (Deep RJ)',
@@ -2284,3 +2294,54 @@ export function getSpeechSpeedConfirmationMessage(slangId = 'kongu_tamil', speed
   const fallbackMap = langFallbackMap[langId] || DIALECT_SPEED_PROMPTS.standard_tamil;
   return fallbackMap?.[normalizedSpeed] || fallbackMap?.normal || "Speech speed updated!";
 }
+
+export function getSpeedSelectPrompt(langId = 'tamil') {
+  switch (langId) {
+    case 'tamil':
+      return "குரல் பேசும் வேகம் எதுவாக இருக்க வேண்டும்: மெதுவாக (Slow), இயல்பாக (Normal), அல்லது வேகமாக (Fast)?";
+    case 'hindi':
+      return "कृपया अपनी पसंदीदा आवाज़ की गति चुनें: धीमी (Slow), सामान्य (Normal), या तेज़ (Fast)?";
+    case 'telugu':
+      return "దయచేసి మీ వాయిస్ వేగం ఎంచుకోండి: నెమ్మదిగా (Slow), సాధారణంగా (Normal), లేదా వేగంగా (Fast)?";
+    case 'malayalam':
+      return "ദയവായി സംസാര വേഗത തിരഞ്ഞെടുക്കുക: പതുക്കെ (Slow), സാധാരണ (Normal), അതോ വേഗത്തിൽ (Fast)?";
+    case 'english':
+    default:
+      return "Please select your preferred speech speed: Slow, Normal, or Fast.";
+  }
+}
+
+export function getSetupCompletionGreeting(langId = 'tamil', slangId = 'kongu_tamil') {
+  if (langId === 'tamil') {
+    if (slangId === 'kongu_tamil') {
+      return "வணக்கமுங்கண்ணா! அமைப்பு எல்லாம் முடிஞ்சதுங்கண்ணா. எப்படி இருக்கீங்க? நல்லா இருக்கீங்களாண்ணா? உங்களுக்கு என்ன வேணுமுங்கண்ணா? நான் உங்களுக்கு என்ன உதவி செய்யலாமுங்கண்ணா?";
+    }
+    if (slangId === 'chennai_tamil') {
+      return "வணக்கம் பா! செட்டப் எல்லாம் முடிஞ்சது பா. எப்படி இருக்கீங்க பா? நல்லா இருக்கீங்களா? உங்களுக்கு என்ன வேணும்? நான் உங்களுக்கு என்ன உதவி செய்யலாம் பா?";
+    }
+    if (slangId === 'madurai_tamil') {
+      return "வணக்கம்யா! செட்டப் முடிஞ்சாச்சுயா. எப்படி இருக்கீங்க? நல்லா இருக்கீங்களா? உங்களுக்கு என்ன வேணும்? நான் உங்களுக்கு என்ன உதவி செய்யலாம்யா?";
+    }
+    if (slangId === 'nellai_tamil') {
+      return "வணக்கம்வே! செட்டப் அருமையா முடிஞ்சதுவே. எப்படி இருக்கீங்க? நல்லா இருக்கீங்களாவே? உங்களுக்கு என்ன வேணும்? நான் என்ன உதவி செய்யட்டும்வே?";
+    }
+    return "வணக்கம்! உங்கள் அமைப்புகள் அனைத்தும் வெற்றிகரமாக முடிக்கப்பட்டன. எப்படி இருக்கிறீர்கள்? நலமாக இருக்கிறீர்களா? உங்களுக்கு என்ன வேண்டும்? நான் உங்களுக்கு என்ன உதவி செய்ய முடியும்?";
+  }
+  if (langId === 'malayalam') {
+    return "നമസ്കാരം! ക്രമീകരണങ്ങൾ പൂർത്തിയായി. എങ്ങനെയുണ്ട്? സുഖമാണോ? താങ്കൾക്ക് എന്താണ് വേണ്ടത്? ഞാൻ എന്ത് സഹായമാണ് ചെയ്യേണ്ടത്?";
+  }
+  if (langId === 'hindi') {
+    return "नमस्ते! सेटअप पूरा हो गया है। आप कैसे हैं? सब कुशल-मंगल? आपको क्या चाहिए? मैं आपकी क्या मदद कर सकता हूँ?";
+  }
+  if (langId === 'telugu') {
+    return "నమస్కారం! సెటప్ పూర్తయింది. ఎలా ఉన్నారు? బాగున్నారా? మీకు ఏమి కావాలి? నేను మీకు ఏ విధంగా సహాయం చేయగలను?";
+  }
+  if (slangId === 'indian_english') {
+    return "Hello! Setup is all complete. How are you doing today? Tell me, what do you need, and how can I help you?";
+  }
+  if (slangId === 'british_standard' || slangId === 'british_casual') {
+    return "Good day! Setup is now complete. How are you doing today? How may I be of assistance to you?";
+  }
+  return "Hello! Setup is complete. How are you doing today? What's on your mind, and how can I help you?";
+}
+
