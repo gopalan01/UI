@@ -27,7 +27,8 @@ export default function ConversationPanel({
   onOpenChangeLanguage,
   isCollapsed = true,
   onToggleCollapse,
-  onSwitchToHero
+  onSwitchToHero,
+  voiceControls = null
 }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -229,13 +230,20 @@ export default function ConversationPanel({
             </button>
           </div>
 
-          {/* Voice Status Footer Badge */}
-          <div className="chat-voice-footer-bar">
-            <div className="voice-footer-pill">
-              <Mic size={12} className="text-cyan animate-pulse" />
-              <span>Active Dialect: <strong>{currentSlang}</strong></span>
+          {/* Integrated Voice Interaction Controls (Inside the Voice Conversation Card itself) */}
+          {voiceControls ? (
+            <div className="chat-integrated-voice-dock">
+              {voiceControls}
             </div>
-          </div>
+          ) : (
+            /* Fallback Voice Status Footer Badge */
+            <div className="chat-voice-footer-bar">
+              <div className="voice-footer-pill">
+                <Mic size={12} className="text-cyan animate-pulse" />
+                <span>Active Dialect: <strong>{currentSlang}</strong></span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

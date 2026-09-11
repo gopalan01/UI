@@ -935,64 +935,57 @@ export default function App() {
         <main className={`aurqo-content-body ${hasStartedVoice ? 'conversation-active' : 'hero-active'}`}>
           {hasStartedVoice ? (
             /* CONVERSATION ACTIVE MODE:
-               1. Voice Conversation is at the TOP (flex: 1, scrollable chat with full controls)
-               2. Both Animation Buttons (AI Character Orb + Central Mic Tap to Speak) are at the BOTTOM dock */
+               Voice Conversation Box with Integrated Microphone & AI Animation Stage */
             <section className="fixed-center-stage mode-conversation" aria-label="AI Audio Interaction Core">
               <div className="conversation-stage-container">
-                {/* TOP: Voice Conversation */}
-                <div className="stage-top-conversation">
-                  <ConversationPanel
-                    messages={messages}
-                    onClearHistory={handleClearHistory}
-                    onRestartConversation={handleRestartConversation}
-                    onReplayAudio={handleReplayAudio}
-                    activePlayingIndex={activePlayingIndex}
-                    currentLanguage={config.language}
-                    currentSlang={currentSlangObj.name}
-                    onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
-                    isCollapsed={false}
-                    onSwitchToHero={() => setHasStartedVoice(false)}
-                  />
-                </div>
+                <ConversationPanel
+                  messages={messages}
+                  onClearHistory={handleClearHistory}
+                  onRestartConversation={handleRestartConversation}
+                  onReplayAudio={handleReplayAudio}
+                  activePlayingIndex={activePlayingIndex}
+                  currentLanguage={config.language}
+                  currentSlang={currentSlangObj.name}
+                  onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
+                  isCollapsed={false}
+                  onSwitchToHero={() => setHasStartedVoice(false)}
+                  voiceControls={
+                    <>
+                      {/* Integrated Animation Row (AI Character + Energy Bridge + Central Mic) */}
+                      <div className="dock-interactive-row">
+                        <div className="dock-character-col">
+                          <AICharacter state={aiState} customMessage={errorMessage} emotion={config.emotion || 'default'} />
+                        </div>
 
-                {/* BOTTOM: Both Animation Buttons on Top, Audio Visualizer Animation BELOW */}
-                <div className="stage-bottom-animation-dock">
-                  {/* The Two Animation Buttons Row (AI Character on Left, Energy Bridge in Center, Central Mic on Right) */}
-                  <div className="dock-interactive-row">
-                    {/* Left: Holographic 3D AI Character Orb */}
-                    <div className="dock-character-col">
-                      <AICharacter state={aiState} customMessage={errorMessage} emotion={config.emotion || 'default'} />
-                    </div>
+                        <div className={`dock-connection-bridge hero-connection-bridge bridge-${aiState}`} aria-hidden="true">
+                          <div className="bridge-line" />
+                          <div className="bridge-pulse-node">
+                            <Sparkles size={11} className="bridge-icon" />
+                          </div>
+                        </div>
 
-                    {/* Center: Dynamic Energy Connection Bridge */}
-                    <div className={`dock-connection-bridge hero-connection-bridge bridge-${aiState}`} aria-hidden="true">
-                      <div className="bridge-line" />
-                      <div className="bridge-pulse-node">
-                        <Sparkles size={11} className="bridge-icon" />
+                        <div className="dock-mic-col">
+                          <CentralMic
+                            isListening={aiState === 'listening'}
+                            isSpeaking={aiState === 'speaking'}
+                            state={aiState}
+                            onMicClick={handleMicClick}
+                            onStopSpeech={handleStopSpeech}
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Right: Interactive Central Microphone Button */}
-                    <div className="dock-mic-col">
-                      <CentralMic
-                        isListening={aiState === 'listening'}
-                        isSpeaking={aiState === 'speaking'}
-                        state={aiState}
-                        onMicClick={handleMicClick}
-                        onStopSpeech={handleStopSpeech}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Realtime Dual-Channel Audio Visualizer Spectrum (Placed BELOW Tap to Speak) */}
-                  <div className="dock-visualizer-wrapper">
-                    <AudioVisualizer 
-                      state={aiState} 
-                      isListening={aiState === 'listening'} 
-                      isSpeaking={aiState === 'speaking'} 
-                    />
-                  </div>
-                </div>
+                      {/* Realtime Dual-Channel Audio Visualizer Spectrum */}
+                      <div className="dock-visualizer-wrapper">
+                        <AudioVisualizer 
+                          state={aiState} 
+                          isListening={aiState === 'listening'} 
+                          isSpeaking={aiState === 'speaking'} 
+                        />
+                      </div>
+                    </>
+                  }
+                />
               </div>
             </section>
           ) : (

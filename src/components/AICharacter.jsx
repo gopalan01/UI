@@ -60,41 +60,19 @@ export default function AICharacter({ state = 'idle', customMessage = '', emotio
 
   return (
     <div className={`ai-character-container ${current.colorClass} emotion-aura-${emotion}`} aria-label={`AI Character: ${current.label}`}>
-      {/* Main 3D Quantum Neural AI Orb */}
+      {/* Main Clean Professional AI Orb */}
       <div className="ai-character-orb">
-        {/* Ambient Neural Back Glow */}
+        {/* Soft Ambient Glow */}
         <div className="orb-backdrop-glow" />
 
-        {/* 3D Quantum Wireframe Latitude & Longitude Gyro Spheres (Distinct from Mic) */}
-        <div className="quantum-gyro-frame">
-          <div className="quantum-axis-ring axis-lat" />
-          <div className="quantum-axis-ring axis-long" />
-          <div className="quantum-axis-ring axis-diagonal" />
-        </div>
-
-        {/* Orbiting Prismatic Diamond Shards */}
-        <div className="prismatic-shards-layer">
-          <div className="prismatic-shard shard-1" />
-          <div className="prismatic-shard shard-2" />
-          <div className="prismatic-shard shard-3" />
-          <div className="prismatic-shard shard-4" />
-        </div>
-
-        {/* Glassmorphic Cyber Quantum Core */}
+        {/* Clean Professional Core */}
         <div className="orb-core">
           <div className="orb-inner-gradient" />
-          <div className="orb-hologram-mesh" />
-          <div className="orb-quantum-lattice" />
 
           {/* Central AI State Icon */}
           <div className="orb-center-icon">
-            <StateIcon size={28} className="center-svg-icon" />
+            <StateIcon size={26} className="center-svg-icon" />
           </div>
-
-          {/* Core Sparkle Points */}
-          <div className="orb-sparkle-dot dot-1" />
-          <div className="orb-sparkle-dot dot-2" />
-          <div className="orb-sparkle-dot dot-3" />
         </div>
       </div>
 
