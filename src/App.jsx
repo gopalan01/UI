@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AICharacter from './components/AICharacter';
@@ -33,6 +33,8 @@ import {
 
 import { speechRecognizer } from './services/speechRecognition';
 import { speechAudioEngine } from './services/speechAudioEngine';
+import { audioRecorder } from './services/audioRecorder';
+import { apiService } from './services/apiService';
 import { 
   saveConversationSession 
 } from './services/conversationHistoryService';
@@ -123,6 +125,7 @@ export default function App() {
   const [activePlayingIndex, setActivePlayingIndex] = useState(null);
   const [hasStartedVoice, setHasStartedVoice] = useState(false);
   const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(false);
+  const currentAudioRef = useRef(null);
 
   // Close voice settings on Escape key
   useEffect(() => {
@@ -530,6 +533,11 @@ export default function App() {
 
   // Restart Flow: Auto-saves complete conversation to History BEFORE resetting to Step 1 Language selection
   const handleRestartConversation = () => {
+    if (currentAudioRef.current) {
+      try { currentAudioRef.current.pause(); } catch (_e) {}
+      currentAudioRef.current = null;
+    }
+    audioRecorder.cancelRecording();
     speechAudioEngine.stop();
     speechRecognizer.abortListening();
     setAiState('idle');
@@ -617,6 +625,11 @@ export default function App() {
 
   // Start fresh new empty conversation
   const handleNewConversation = () => {
+    if (currentAudioRef.current) {
+      try { currentAudioRef.current.pause(); } catch (_e) {}
+      currentAudioRef.current = null;
+    }
+    audioRecorder.cancelRecording();
     speechAudioEngine.stop();
     speechRecognizer.abortListening();
     setAiState('idle');
@@ -767,59 +780,149 @@ export default function App() {
     }, 450);
   };
 
-  // Microphone Click Handler (Start / Stop)
-  const handleMicClick = () => {
-    // If conversation mode is not active yet, activate it!
+  // Microphone Click Handler (Start / Stop) with FastAPI Backend Integration & Duplicate Request Protection
+  const handleMicClick = async () => {
+    // 1. Duplicate Request Protection: Prevent multiple triggers while backend is processing
+    if (aiState === 'thinking') {
+      return;
+    }
+
+    // 2. If conversation mode is not active yet, activate it!
     if (!hasStartedVoice) {
       setHasStartedVoice(true);
     }
 
-    // If currently speaking, stop voice playback
+    // 3. If currently speaking, stop voice playback immediately
     if (aiState === 'speaking') {
+      if (currentAudioRef.current) {
+        try { currentAudioRef.current.pause(); } catch (_e) {}
+        currentAudioRef.current = null;
+      }
       speechAudioEngine.stop();
       setAiState('idle');
       return;
     }
 
-    // If currently listening, stop recognition
+    // 4. If currently listening, stop recording and send audio to FastAPI backend!
     if (aiState === 'listening') {
-      speechRecognizer.stopListening();
-      setAiState('idle');
+      setAiState('thinking');
+      try {
+        const audioResult = await audioRecorder.stopRecording();
+        if (!audioResult || !audioResult.blob || audioResult.blob.size === 0) {
+          setAiState('idle');
+          return;
+        }
+
+        const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
+        const currentSlangObj = currentLangObj.slangs.find((s) => s.id === config.slang) || currentLangObj.slangs[0];
+        const voiceObj = getVoicePreference(config.language, config.voice);
+        const emoObj = getEmotionPreference(config.emotion || 'default');
+
+        // Send recorded audio + selected settings to FastAPI POST /conversation
+        const backendRes = await apiService.sendConversation(audioResult.blob, {
+          language: config.language,
+          region: config.region,
+          slang: config.slang,
+          voice: config.voice,
+          emotion: config.emotion || 'default',
+          speechSpeed
+        });
+
+        if (backendRes && backendRes.status === 'success') {
+          // Display recognized user transcript in conversation
+          if (backendRes.user_text) {
+            addMessage('user', backendRes.user_text, '', config.language);
+          }
+
+          // Display AI response in conversation
+          if (backendRes.ai_text) {
+            addMessage(
+              'ai',
+              backendRes.ai_text,
+              `${currentSlangObj.name} (${voiceObj.name} • ${emoObj.name})`,
+              config.language
+            );
+
+            // Play synthesized neural audio response
+            if (backendRes.audio_base64 && !isMuted) {
+              if (currentAudioRef.current) {
+                try { currentAudioRef.current.pause(); } catch (_e) {}
+              }
+              const audio = new Audio(backendRes.audio_base64);
+              currentAudioRef.current = audio;
+              setAiState('speaking');
+
+              audio.onended = () => {
+                setAiState('idle');
+                currentAudioRef.current = null;
+              };
+
+              audio.onerror = () => {
+                currentAudioRef.current = null;
+                speakAI(backendRes.ai_text, () => setAiState('idle'), config, speechSpeed);
+              };
+
+              try {
+                await audio.play();
+              } catch (_playErr) {
+                speakAI(backendRes.ai_text, () => setAiState('idle'), config, speechSpeed);
+              }
+            } else {
+              setAiState('idle');
+            }
+          } else {
+            setAiState('idle');
+          }
+        } else {
+          throw new Error(backendRes?.message || 'Error processing conversation.');
+        }
+      } catch (err) {
+        console.error('Conversation processing error:', err);
+        setErrorMessage(err.message || 'Error communicating with backend server.');
+        setAiState('error');
+        setTimeout(() => {
+          setAiState((current) => (current === 'error' ? 'idle' : current));
+        }, 4000);
+      }
       return;
     }
 
-    // Start recognition with active language code
-    const langCode = getSpeechRecognitionLanguage(config.language, config.region);
+    // 5. Start audio recording via MediaRecorder
     setErrorMessage('');
-
-    const started = speechRecognizer.startListening(langCode, {
-      onStart: () => {
-        setAiState('listening');
-      },
-      onResult: (transcript) => {
-        handleSpeechResult(transcript);
-      },
-      onError: (errMsg, _errType) => {
-        setErrorMessage(errMsg);
-        setAiState('error');
-        setTimeout(() => {
-          if (aiState === 'error') setAiState('idle');
-        }, 4000);
-      },
-      onEnd: () => {
-        if (aiState === 'listening') {
-          setAiState('idle');
+    try {
+      await audioRecorder.startRecording();
+      setAiState('listening');
+    } catch (err) {
+      console.warn('MediaRecorder error, attempting WebSpeech fallback:', err);
+      // Fallback to speechRecognizer if microphone API had an issue
+      const langCode = getSpeechRecognitionLanguage(config.language, config.region);
+      const started = speechRecognizer.startListening(langCode, {
+        onStart: () => setAiState('listening'),
+        onResult: (transcript) => handleSpeechResult(transcript),
+        onError: (errMsg) => {
+          setErrorMessage(errMsg);
+          setAiState('error');
+          setTimeout(() => setAiState((c) => (c === 'error' ? 'idle' : c)), 4000);
+        },
+        onEnd: () => {
+          setAiState((c) => (c === 'listening' ? 'idle' : c));
         }
+      });
+      if (!started) {
+        setErrorMessage(err.message || 'Could not access microphone.');
+        setAiState('error');
+        setTimeout(() => setAiState((c) => (c === 'error' ? 'idle' : c)), 4000);
       }
-    });
-
-    if (!started) {
-      setAiState('error');
     }
   };
 
   // Stop Speech Playback
   const handleStopSpeech = () => {
+    if (currentAudioRef.current) {
+      try { currentAudioRef.current.pause(); } catch (_e) {}
+      currentAudioRef.current = null;
+    }
+    audioRecorder.cancelRecording();
     speechAudioEngine.stop();
     setAiState('idle');
     setActivePlayingIndex(null);
