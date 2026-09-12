@@ -7,12 +7,17 @@ import {
   User, 
   Sparkles, 
   Radio, 
-  CheckCheck,
-  Mic,
-  Globe,
-  Sliders,
-  X
+  CheckCheck, 
+  Mic, 
+  Globe, 
+  Sliders, 
+  X,
+  CheckCircle2,
+  Play,
+  Pause
 } from 'lucide-react';
+import SetupQuestionCard from './SetupQuestionCard';
+import SetupOptionGuide from './SetupOptionGuide';
 
 export default function ConversationPanel({
   messages = [],
@@ -28,7 +33,16 @@ export default function ConversationPanel({
   isCollapsed = true,
   onToggleCollapse,
   onSwitchToHero,
-  voiceControls = null
+  voiceControls = null,
+  currentStep = 'completed',
+  config = {},
+  speechSpeed = 'normal',
+  onSelectLanguage,
+  onSelectRegion,
+  onSelectSlang,
+  onSelectVoice,
+  onSelectEmotion,
+  onSelectSpeed
 }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -39,6 +53,10 @@ export default function ConversationPanel({
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, isCollapsed, isDrawerMode]);
+
+  // Active setup state and index of latest AI message to embed setup interactive options
+  const isSetupActive = currentStep !== 'completed' && currentStep !== 'welcome';
+  const lastAIMsgIndex = messages.map((m) => m.sender).lastIndexOf('ai');
 
   return (
     <div className={`aurqo-chat-panel ${isDrawerMode ? 'drawer-mode' : ''} is-expanded`}>
@@ -130,18 +148,48 @@ export default function ConversationPanel({
         <div className="chat-panel-collapsible-inner">
           {/* Scrollable Message History Area */}
           <div className="chat-messages-container voice-only-mode" ref={scrollContainerRef}>
-            {messages.length === 0 ? (
+            {/* 1. When Setup is completed: Active Setup Badge */}
+            {currentStep === 'completed' && (
+              <div className="chat-completed-setup-pill-bar">
+                <span className="setup-badge-item">
+                  <Globe size={11} className="text-cyan" />
+                  <span className="capitalize">{config.language || currentLanguage}</span>
+                </span>
+                <span className="setup-badge-sep">•</span>
+                <span className="setup-badge-item">
+                  <span className="capitalize">{currentSlang}</span>
+                </span>
+                <span className="setup-badge-sep">•</span>
+                <span className="setup-badge-item">
+                  <span>{config.voice === 'male' ? 'Male Voice' : config.voice === 'user' ? 'Own Voice' : 'Female Voice'}</span>
+                </span>
+                <span className="setup-badge-sep">•</span>
+                <span className="setup-badge-item">
+                  <span className="capitalize">{config.emotion || 'Default'}</span>
+                </span>
+                <span className="setup-badge-sep">•</span>
+                <span className="setup-badge-item">
+                  <span className="uppercase text-cyan">{speechSpeed}</span>
+                </span>
+              </div>
+            )}
+
+            {messages.length === 0 && (currentStep === 'completed' || currentStep === 'welcome') ? (
               <div className="chat-empty-state">
                 <div className="empty-state-icon">
                   <Sparkles size={32} />
                 </div>
-                <h3 className="empty-state-title">Voice Conversation Ready</h3>
+                <h3 className="empty-state-title">
+                  {currentStep === 'welcome' ? 'Welcome to THAMILI' : 'Voice Conversation Ready'}
+                </h3>
                 <p className="empty-state-text">
-                  Tap the central microphone to speak. Responses are synthesized in real-time in {currentSlang}.
+                  {currentStep === 'welcome'
+                    ? 'AI is starting with a friendly welcome message...'
+                    : `Tap the central microphone to speak. Responses are synthesized in real-time in ${currentSlang}.`}
                 </p>
                 <div className="voice-guide-hint">
                   <Mic size={14} className="text-cyan" />
-                  <span>Voice-first interaction enabled</span>
+                  <span>{currentStep === 'welcome' ? 'Initializing Voice...' : 'Voice-first interaction enabled'}</span>
                 </div>
               </div>
             ) : (
@@ -149,13 +197,14 @@ export default function ConversationPanel({
                 {messages.map((msg, index) => {
                   const isAI = msg.sender === 'ai';
                   const isPlaying = activePlayingIndex === index;
+                  const isCurrentActiveSetupMsg = isAI && isSetupActive && index === lastAIMsgIndex;
 
                   return (
                     <div
                       key={msg.id || index}
-                      className={`chat-message-row ${isAI ? 'message-ai' : 'message-user'}`}
+                      className={`chat-message-row ${isAI ? 'message-ai' : 'message-user'} ${isCurrentActiveSetupMsg ? 'has-setup-content' : ''}`}
                     >
-                      <div className="message-bubble">
+                      <div className={`message-bubble ${isCurrentActiveSetupMsg ? 'has-setup-content' : ''}`}>
                         {/* Message Header info */}
                         <div className="message-meta-row">
                           <div className="sender-tag">
@@ -181,8 +230,23 @@ export default function ConversationPanel({
                         {/* Message Body Text */}
                         <div className="message-body-text">{msg.text}</div>
 
+                        {/* Setup Options Content INSIDE THE SAME THAMILI AI BUBBLE */}
+                        {isCurrentActiveSetupMsg && (
+                          <SetupQuestionCard
+                            currentStep={currentStep}
+                            config={config}
+                            speechSpeed={speechSpeed}
+                            onSelectLanguage={onSelectLanguage}
+                            onSelectRegion={onSelectRegion}
+                            onSelectSlang={onSelectSlang}
+                            onSelectVoice={onSelectVoice}
+                            onSelectEmotion={onSelectEmotion}
+                            onSelectSpeed={onSelectSpeed}
+                          />
+                        )}
+
                         {/* Regional / Slang Tag for AI responses */}
-                        {isAI && msg.slangName && (
+                        {isAI && msg.slangName && !isCurrentActiveSetupMsg && (
                           <div className="message-slang-tag">
                             <Radio size={10} />
                             <span>Style: {msg.slangName}</span>
@@ -191,14 +255,24 @@ export default function ConversationPanel({
 
                         {/* Play Audio Button for AI messages */}
                         {isAI && (
-                          <div className="message-audio-controls">
+                          <div className="message-audio-action-row">
                             <button
-                              className={`replay-voice-btn ${isPlaying ? 'btn-playing' : ''}`}
-                              onClick={() => onReplayAudio(msg.text, index, msg.language || currentLanguage)}
-                              title="Replay Voice Audio"
+                              type="button"
+                              className={`message-audio-play-btn ${isPlaying ? 'is-playing' : ''}`}
+                              onClick={() => onReplayAudio && onReplayAudio(msg.text, index, msg.language)}
+                              title={isPlaying ? 'Pause Audio' : 'Play Audio'}
                             >
-                              <Volume2 size={13} className={isPlaying ? 'animate-pulse' : ''} />
-                              <span>{isPlaying ? 'Playing...' : 'Play Voice'}</span>
+                              {isPlaying ? (
+                                <>
+                                  <Pause size={13} className="play-icon animate-pulse text-cyan" />
+                                  <span>Playing Audio...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play size={13} className="play-icon" />
+                                  <span>Play Audio</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         )}
@@ -206,9 +280,66 @@ export default function ConversationPanel({
                     </div>
                   );
                 })}
-                <div ref={messagesEndRef} className="messages-bottom-anchor" />
+
+                {/* Fallback Active Setup Question: If active setup is running and no AI message has been rendered */}
+                {isSetupActive && lastAIMsgIndex === -1 && (
+                  <div className="chat-message-row message-ai has-setup-content animate-fade-in-up">
+                    <div className="message-bubble has-setup-content">
+                      <div className="message-meta-row">
+                        <div className="sender-tag">
+                          <Sparkles size={12} className="sender-icon-ai" />
+                          <span className="sender-name">THAMILI AI</span>
+                        </div>
+                        <div className="message-time-status">
+                          <span className="message-timestamp">Just now</span>
+                        </div>
+                      </div>
+
+                      <div className="message-body-text">
+                        {config.language === 'tamil'
+                          ? 'நீங்கள் எந்த மொழியில் உரையாட விரும்புகிறீர்கள்?'
+                          : 'Which language would you like to use for the conversation?'}
+                      </div>
+
+                      <SetupQuestionCard
+                        currentStep={currentStep}
+                        config={config}
+                        speechSpeed={speechSpeed}
+                        onSelectLanguage={onSelectLanguage}
+                        onSelectRegion={onSelectRegion}
+                        onSelectSlang={onSelectSlang}
+                        onSelectVoice={onSelectVoice}
+                        onSelectEmotion={onSelectEmotion}
+                        onSelectSpeed={onSelectSpeed}
+                      />
+
+                      {onReplayAudio && (
+                        <div className="message-audio-action-row">
+                          <button
+                            type="button"
+                            className="message-audio-play-btn"
+                            onClick={() =>
+                              onReplayAudio(
+                                config.language === 'tamil'
+                                  ? 'நீங்கள் எந்த மொழியில் உரையாட விரும்புகிறீர்கள்?'
+                                  : 'Which language would you like to use for the conversation?',
+                                999,
+                                config.language
+                              )
+                            }
+                            title="Play Audio"
+                          >
+                            <Play size={13} className="play-icon" />
+                            <span>Play Audio</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+            <div ref={messagesEndRef} className="messages-bottom-anchor" />
           </div>
 
           {/* Elegant Single-Line "🌐 Change Language" Control */}

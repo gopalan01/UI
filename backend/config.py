@@ -334,7 +334,7 @@ TONE_PITCH_MAPPING = {
     "happy": "+15Hz",
     "sad": "-12Hz",
     "friendly": "+5Hz",
-    "husky": "-24Hz",
+    "husky": "-30Hz",
     "excitement": "+22Hz",
     "calm": "-5Hz",
     "romantic": "-8Hz",

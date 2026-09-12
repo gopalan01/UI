@@ -319,3 +319,230 @@ export function checkExplicitLanguageSwitch(speechText = '') {
 
   return null;
 }
+
+// 7. Explicit Slang, Voice, Tone, and Speed Setting Switch Commands (Requirement 6, 7, 9, 10, 16)
+export function checkExplicitSettingSwitch(speechText = '', currentConfig = { language: 'tamil', slang: 'kongu_tamil', voice: 'female', emotion: 'default' }) {
+  if (!speechText || !speechText.trim()) return null;
+  const text = speechText.toLowerCase().trim();
+
+  // A. Slang / Dialect Switch
+  // Supports "எனக்கு Kongu Tamil வேண்டாம், Madurai Tamil வேண்டும்", "Switch to Madurai Tamil", "Madurai Tamil style", etc.
+  if (currentConfig.language === 'tamil') {
+    if (text.includes('மதுரை') || text.includes('madurai')) {
+      return {
+        type: 'slang',
+        value: 'madurai_tamil',
+        confirmation: "சரிங்கயா! மதுரை தமிழ் ஸ்டைலுக்கு மாற்றியாச்சுயா. இனிமேல் நான் உங்களிடம் மதுரை தமிழ்ல நச்சுன்னு பேசுவேன்யா. உங்களுக்கு என்ன வேணும்யா?"
+      };
+    }
+    if (text.includes('கொங்கு') || text.includes('kongu') || text.includes('கோவை')) {
+      return {
+        type: 'slang',
+        value: 'kongu_tamil',
+        confirmation: "சரிங்கண்ணா! கொங்கு தமிழ் ஸ்டைலுக்கு மாற்றியாச்சுங்கண்ணா. இனிமேல் நான் உங்களிடம் கொங்கு தமிழ்ல பேசுவேங்கண்ணா."
+      };
+    }
+    if (text.includes('சென்னை') || text.includes('chennai') || text.includes('மெட்ராஸ்') || text.includes('madras')) {
+      return {
+        type: 'slang',
+        value: 'chennai_tamil',
+        confirmation: "சூப்பர் பா! மெட்ராஸ் சென்னை பாஷைக்கு மாற்றியாச்சு பா. இனி கெத்தா பேசுவோம் பா!"
+      };
+    }
+    if (text.includes('நெல்லை') || text.includes('nellai') || text.includes('திருநெல்வேலி')) {
+      return {
+        type: 'slang',
+        value: 'nellai_tamil',
+        confirmation: "அடடே சூப்பருவே! நெல்லை தமிழ் ஸ்டைலுக்கு மாற்றியாச்சுவே. இனிமே நெல்லை தமிழ்ல பேசுறேன்வே."
+      };
+    }
+    if (text.includes('பொதுத் தமிழ்') || text.includes('செந்தமிழ்') || text.includes('standard tamil')) {
+      return {
+        type: 'slang',
+        value: 'standard_tamil',
+        confirmation: "சரி, பொதுத் தமிழ் ஸ்டைலுக்கு மாற்றப்பட்டது. இனிமேல் நான் உங்களிடம் தெளிவான பொதுத் தமிழில் பேசுவேன்."
+      };
+    }
+  }
+
+  // English Slang Switch
+  if (currentConfig.language === 'english') {
+    if (text.includes('british') || text.includes('uk english')) {
+      return {
+        type: 'slang',
+        value: 'british_rp',
+        confirmation: "Right away! Switched to British English. How may I be of assistance to you?"
+      };
+    }
+    if (text.includes('american') || text.includes('casual') || text.includes('us english')) {
+      return {
+        type: 'slang',
+        value: 'american_casual',
+        confirmation: "Awesome! Switched to Casual American English. What's on your mind?"
+      };
+    }
+    if (text.includes('indian english')) {
+      return {
+        type: 'slang',
+        value: 'indian_english',
+        confirmation: "Sure! Switched to Indian English style. How can I help you today?"
+      };
+    }
+  }
+
+  // Malayalam Slang Switch
+  if (currentConfig.language === 'malayalam') {
+    if (text.includes('കോഴിക്കോട്') || text.includes('മലബാർ') || text.includes('malabar')) {
+      return {
+        type: 'slang',
+        value: 'malabar_malayalam',
+        confirmation: "അടിപൊളി ചങ്ങായീ! ഇനി മലബാർ കോഴിക്കോടൻ ശൈലിയിൽ സംസാരിക്കാം. എന്താണ് അറിയേണ്ടത്?"
+      };
+    }
+    if (text.includes('തിരുവനന്തപുരം') || text.includes('travancore')) {
+      return {
+        type: 'slang',
+        value: 'travancore_malayalam',
+        confirmation: "ശരി അളിയാ! ഇനിമുതൽ തിരുവിതാംകൂർ ശൈലിയിൽ പൊളിക്കാം."
+      };
+    }
+    if (text.includes('വള്ളുവനാടൻ') || text.includes('valluvanadan')) {
+      return {
+        type: 'slang',
+        value: 'valluvanadan_malayalam',
+        confirmation: "ശരി ട്ടോ! ഇനി ഞാൻ നിങ്ങളോട് വള്ളുവനാടൻ ശൈലിയിൽ സംസാരിക്കാം."
+      };
+    }
+    if (text.includes('standard') || text.includes('സാധാരണ')) {
+      return {
+        type: 'slang',
+        value: 'standard_malayalam',
+        confirmation: "ശരി, സാധാരണ മലയാളത്തിലേക്ക് മാറ്റിയിരിക്കുന്നു."
+      };
+    }
+  }
+
+  // B. Voice Type Switch (Male / Female)
+  if (
+    text.includes('male voice') ||
+    text.includes('switch to male') ||
+    text.includes('change to male') ||
+    text.includes('ஆண் குரல்') ||
+    text.includes('ஆண் வாய்ஸ்') ||
+    text.includes('पुरुष स्वर') ||
+    text.includes('പുരുഷ സ്വരം')
+  ) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "ஆண் குரலுக்கு மாற்றப்பட்டது! இனிமேல் இந்த ஆண் குரலில் பதில்கள் இருக்கும்."
+      : currentConfig.language === 'malayalam'
+      ? "പുരുഷ ശബ്ദത്തിലേക്ക് മാറ്റി! ഇനി ഈ ശബ്ദത്തിൽ സംസാരിക്കാം."
+      : "Switched to Male Voice. I will now respond in this voice.";
+    return {
+      type: 'voice',
+      value: 'male',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (
+    text.includes('female voice') ||
+    text.includes('switch to female') ||
+    text.includes('change to female') ||
+    text.includes('பெண் குரல்') ||
+    text.includes('பெண் வாய்ஸ்') ||
+    text.includes('महिला स्वर') ||
+    text.includes('സ്ത്രീ സ്വരം')
+  ) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "பெண் குரலுக்கு மாற்றப்பட்டது! இனிமேல் இந்த பெண் குரலில் பதில்கள் இருக்கும்."
+      : currentConfig.language === 'malayalam'
+      ? "സ്ത്രീ ശബ്ദത്തിലേക്ക് മാറ്റി! ഇനി ഈ ശബ്ദത്തിൽ സംസാരിക്കാം."
+      : "Switched to Female Voice. I will now respond in this voice.";
+    return {
+      type: 'voice',
+      value: 'female',
+      confirmation: confirmMsg
+    };
+  }
+
+  // C. Tone Switch (Husky, Happy, Calm, Friendly)
+  if (text.includes('husky') || text.includes('கம்பீரம்') || text.includes('கம்பீரமான') || text.includes('deep voice')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "வாய்ஸ் டோன் கம்பீரம் (Husky) நிலைக்கு மாற்றப்பட்டது!"
+      : "Voice tone updated to Husky.";
+    return {
+      type: 'emotion',
+      value: 'husky',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (text.includes('happy') || text.includes('மகிழ்ச்சி') || text.includes('சந்தோஷம்')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "மகிழ்ச்சியான டோனுக்கு மாற்றப்பட்டது! நான் சந்தோஷமாக பேசுகிறேன்."
+      : "Voice tone set to Happy!";
+    return {
+      type: 'emotion',
+      value: 'happy',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (text.includes('calm') || text.includes('அமைதி') || text.includes('அமைதியான')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "அமைதியான டோனுக்கு மாற்றப்பட்டது."
+      : "Voice tone set to Calm.";
+    return {
+      type: 'emotion',
+      value: 'calm',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (text.includes('friendly') || text.includes('நட்பு') || text.includes('தோழமை')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "நட்பான தோழமை டோனுக்கு மாற்றப்பட்டது!"
+      : "Voice tone set to Friendly!";
+    return {
+      type: 'emotion',
+      value: 'friendly',
+      confirmation: confirmMsg
+    };
+  }
+
+  // D. Speed Switch (Slow, Normal, Fast)
+  if (text.includes('fast speed') || text.includes('வேகமாக பேசு') || text.includes('speed fast') || text.includes('ஸ்பீடா பேசு')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "பேசும் வேகம் அதிகரிக்கப்பட்டது (Fast - 1.4x)!"
+      : "Speech speed set to Fast (1.4x)!";
+    return {
+      type: 'speed',
+      value: 'fast',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (text.includes('slow speed') || text.includes('மெதுவாக பேசு') || text.includes('speed slow') || text.includes('மெதுவா பேசு')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "பேசும் வேகம் மெதுவாக்கப்பட்டது (Slow - 0.75x)."
+      : "Speech speed set to Slow (0.75x).";
+    return {
+      type: 'speed',
+      value: 'slow',
+      confirmation: confirmMsg
+    };
+  }
+
+  if (text.includes('normal speed') || text.includes('இயல்பாக பேசு') || text.includes('speed normal')) {
+    const confirmMsg = currentConfig.language === 'tamil'
+      ? "பேசும் வேகம் இயல்பான நிலைக்கு வைக்கப்பட்டது (Normal - 1.0x)."
+      : "Speech speed set to Normal (1.0x).";
+    return {
+      type: 'speed',
+      value: 'normal',
+      confirmation: confirmMsg
+    };
+  }
+
+  return null;
+}

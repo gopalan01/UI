@@ -181,8 +181,9 @@ class SpeechAudioEngine {
     const table = {
       default: { pitch: 1.0, rate: 1.0 },
       happy: { pitch: 1.12, rate: 1.05 },
+      friendly: { pitch: 1.05, rate: 1.02 },
       sad: { pitch: 0.88, rate: 0.82 },
-      husky: { pitch: 0.76, rate: 0.88 },
+      husky: { pitch: 0.72, rate: 0.86 },
       excitement: { pitch: 1.18, rate: 1.12 },
       calm: { pitch: 0.94, rate: 0.88 },
       romantic: { pitch: 0.95, rate: 0.86 },

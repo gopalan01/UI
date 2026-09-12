@@ -30,7 +30,8 @@ import {
 import { 
   getMockAIResponse, 
   autoDetectLanguageAndSlang,
-  checkExplicitLanguageSwitch
+  checkExplicitLanguageSwitch,
+  checkExplicitSettingSwitch
 } from './services/mockAIEngine';
 
 import { speechRecognizer } from './services/speechRecognition';
@@ -40,6 +41,23 @@ import { apiService } from './services/apiService';
 import { 
   saveConversationSession 
 } from './services/conversationHistoryService';
+import {
+  normalizeVoiceInput,
+  normalizeSpeechText,
+  matchLanguage,
+  matchLanguageAlias,
+  matchCountry,
+  matchRegionAlias,
+  matchSlang,
+  matchSlangAlias,
+  matchVoiceType,
+  matchVoiceAlias,
+  matchTone,
+  matchEmotionAlias,
+  matchSpeechSpeed,
+  matchSpeedAlias,
+  STT_LANGUAGE_CODES
+} from './services/setupVoiceMatcher';
 
 // ================================================================
 // FUTURE THAMILI PLATFORM INTEGRATION HOOKS:
@@ -99,8 +117,8 @@ export default function App() {
     };
   });
 
-  // 3. Selection Step State: 'language' -> 'region' -> 'slang' -> 'voice' -> 'emotion' -> 'speed' -> 'completed'
-  const [currentStep, setCurrentStep] = useState('language');
+  // 3. Selection Step State: 'welcome' -> 'language' -> 'region' -> 'slang' -> 'voice' -> 'emotion' -> 'speed' -> 'completed'
+  const [currentStep, setCurrentStep] = useState('welcome');
 
   // 3b. Speech Speed State ('slow' | 'normal' | 'fast', persisted in LocalStorage)
   const [speechSpeed, setSpeechSpeed] = useState(() => {
@@ -455,7 +473,7 @@ export default function App() {
     }
   };
 
-  // 1. Handle Language Selection -> Automatically updates config, sets default speed 'normal', replies in language, and advances to Region step!
+  // 1. Handle Language Selection -> Sets language, replies, and advances to Region step during setup, or applies immediately during normal conversation!
   const handleSelectLanguage = (langId) => {
     const selectedLang = SUPPORTED_LANGUAGES.find((l) => l.id === langId) || SUPPORTED_LANGUAGES[0];
     const defaultRegion = selectedLang.defaultRegion;
@@ -475,15 +493,21 @@ export default function App() {
     setSpeechSpeed('normal');
     localStorage.setItem('aurqo_speech_speed', 'normal');
 
-    // Advance to Step 2 (Country / Region)
-    setCurrentStep('region');
-
-    const promptText = getLanguageSelectPrompt(selectedLang);
-    addMessage('ai', promptText, 'Country Setup', langId);
-    speakAI(promptText, () => setAiState('idle'), newConfig, 'normal');
+    if (currentStep !== 'completed') {
+      // Advance to Step 2 (Country / Region)
+      setCurrentStep('region');
+      const promptText = getLanguageSelectPrompt(selectedLang);
+      addMessage('ai', promptText, 'Country Setup', langId);
+      speakAI(promptText, () => setAiState('idle'), newConfig, 'normal');
+    } else {
+      // Normal conversation: apply immediately without restarting setup flow!
+      const switchConfirm = getEmotionConfirmationMessage(newConfig.slang, newConfig.emotion, langId);
+      addMessage('ai', switchConfirm, `${defaultSlang.name} (${defaultVoice})`, langId);
+      speakAI(switchConfirm, () => setAiState('idle'), newConfig, 'normal');
+    }
   };
 
-  // 2. Handle Region Selection -> Automatically updates region, replies, and advances to Slang step!
+  // 2. Handle Region Selection -> Updates region, replies, and advances to Slang step!
   const handleSelectRegion = (regionId) => {
     const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
     const selectedRegion = currentLang.regions.find((r) => r.id === regionId) || currentLang.regions[0];
@@ -491,15 +515,21 @@ export default function App() {
     const newConfig = { ...config, region: regionId };
     setConfig(newConfig);
 
-    // Advance to Step 3 (Slang / Style)
-    setCurrentStep('slang');
-
-    const promptText = getRegionSelectPrompt(currentLang, selectedRegion);
-    addMessage('ai', promptText, 'Slang Setup', config.language);
-    speakAI(promptText, () => setAiState('idle'), newConfig, speechSpeed);
+    if (currentStep !== 'completed') {
+      // Advance to Step 3 (Slang / Style)
+      setCurrentStep('slang');
+      const promptText = getRegionSelectPrompt(currentLang, selectedRegion);
+      addMessage('ai', promptText, 'Slang Setup', config.language);
+      speakAI(promptText, () => setAiState('idle'), newConfig, speechSpeed);
+    } else {
+      // Normal conversation: apply immediately!
+      const promptText = getRegionSelectPrompt(currentLang, selectedRegion);
+      addMessage('ai', promptText, 'Region Updated', config.language);
+      speakAI(promptText, () => setAiState('idle'), newConfig, speechSpeed);
+    }
   };
 
-  // 3. Handle Slang Selection -> Automatically updates slang, replies in that slang, and advances to Voice step!
+  // 3. Handle Slang Selection -> Updates slang, replies in that slang, and advances to Voice step!
   const handleSelectSlang = (slangId) => {
     const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
     const selectedSlang = currentLang.slangs.find((s) => s.id === slangId) || currentLang.slangs[0];
@@ -507,12 +537,18 @@ export default function App() {
     const newConfig = { ...config, slang: slangId };
     setConfig(newConfig);
 
-    // Advance to Step 4 (Voice Model)
-    setCurrentStep('voice');
-
-    const voicePrompt = getVoiceSelectPrompt(currentLang, selectedSlang);
-    addMessage('ai', voicePrompt, selectedSlang.name, config.language);
-    speakAI(voicePrompt, () => setAiState('idle'), newConfig, speechSpeed);
+    if (currentStep !== 'completed') {
+      // Advance to Step 4 (Voice Model)
+      setCurrentStep('voice');
+      const voicePrompt = getVoiceSelectPrompt(currentLang, selectedSlang);
+      addMessage('ai', voicePrompt, selectedSlang.name, config.language);
+      speakAI(voicePrompt, () => setAiState('idle'), newConfig, speechSpeed);
+    } else {
+      // Normal conversation: apply immediately!
+      const confirmText = selectedSlang.confirmation || `Switched to ${selectedSlang.name}.`;
+      addMessage('ai', confirmText, selectedSlang.name, config.language);
+      speakAI(confirmText, () => setAiState('idle'), newConfig, speechSpeed);
+    }
   };
 
   // 4. Handle Voice Selection -> Advances to Step 5: Emotion Selection!
@@ -525,7 +561,9 @@ export default function App() {
     const voiceObj = getVoicePreference(config.language, voiceId);
 
     if (voiceId === 'user' && !uploadedVoiceFile) {
-      setCurrentStep('emotion');
+      if (currentStep !== 'completed') {
+        setCurrentStep('emotion');
+      }
       setIsVoiceModalOpen(true);
       setAiState('uploading');
 
@@ -541,12 +579,18 @@ export default function App() {
       return;
     }
 
-    // Advance to Step 5 (Voice Tone)
-    setCurrentStep('emotion');
-
-    const emotionPrompt = getEmotionSelectPrompt(currentLang, currentSlang, voiceObj);
-    addMessage('ai', emotionPrompt, `${currentSlang.name} (${voiceObj.name})`, config.language);
-    speakAI(emotionPrompt, () => setAiState('idle'), newConfig, speechSpeed);
+    if (currentStep !== 'completed') {
+      // Advance to Step 5 (Voice Tone)
+      setCurrentStep('emotion');
+      const emotionPrompt = getEmotionSelectPrompt(currentLang, currentSlang, voiceObj);
+      addMessage('ai', emotionPrompt, `${currentSlang.name} (${voiceObj.name})`, config.language);
+      speakAI(emotionPrompt, () => setAiState('idle'), newConfig, speechSpeed);
+    } else {
+      // Normal conversation: apply immediately!
+      const voiceConfirmMsg = getVoiceConfirmationMessage(config.slang, voiceId, config.language);
+      addMessage('ai', voiceConfirmMsg, `${currentSlang.name} (${voiceObj.name})`, config.language);
+      speakAI(voiceConfirmMsg, () => setAiState('idle'), newConfig, speechSpeed);
+    }
   };
 
   // 5. Handle Tone Selection -> Advances to Step 6: Speech Speed
@@ -570,6 +614,33 @@ export default function App() {
       speakAI(confirmText, () => setAiState('idle'), newConfig, speechSpeed);
     }
   };
+
+  // Immediately stop AI audio playback, speech synthesis, and return to idle (Mute / Cancel)
+  const handleStopSpeech = useCallback(() => {
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch (_e) {}
+      currentAudioRef.current = null;
+    }
+    try {
+      speechAudioEngine.stop();
+    } catch (_e) {}
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (_e) {}
+    try {
+      audioRecorder.cancelRecording();
+    } catch (_e) {}
+    try {
+      speechRecognizer.abortListening();
+    } catch (_e) {}
+    setAiState('idle');
+    setActivePlayingIndex(null);
+  }, []);
 
   // 6. Test Current Voice Live Audio
   const handleTestVoice = () => {
@@ -613,8 +684,8 @@ export default function App() {
       });
     }
 
-    // Reset selection step back to Step 1: Language
-    setCurrentStep('language');
+    // Reset selection step back to initial welcome stage
+    setCurrentStep('welcome');
 
     // Reset config to fresh default setup (Tamil, Kongu Tamil, Female, Default Emotion)
     const resetConfig = {
@@ -785,6 +856,37 @@ export default function App() {
       return;
     }
 
+    // 1b. Check for explicit voice command to switch slang, voice, tone, or speed (Requirement 6, 7, 9, 10, 16)
+    const settingSwitch = checkExplicitSettingSwitch(queryText, config);
+    if (settingSwitch) {
+      setAiState('thinking');
+      let newConfig = { ...config };
+      let newSpeed = speechSpeed;
+
+      if (settingSwitch.type === 'slang') {
+        newConfig.slang = settingSwitch.value;
+        setConfig(newConfig);
+      } else if (settingSwitch.type === 'voice') {
+        newConfig.voice = settingSwitch.value;
+        setConfig(newConfig);
+      } else if (settingSwitch.type === 'emotion') {
+        newConfig.emotion = settingSwitch.value;
+        setConfig(newConfig);
+      } else if (settingSwitch.type === 'speed') {
+        newSpeed = settingSwitch.value;
+        setSpeechSpeed(newSpeed);
+        localStorage.setItem('aurqo_speech_speed', newSpeed);
+      }
+
+      setTimeout(() => {
+        const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === newConfig.language) || SUPPORTED_LANGUAGES[0];
+        const currentSlang = currentLang.slangs.find((s) => s.id === newConfig.slang) || currentLang.slangs[0];
+        addMessage('ai', settingSwitch.confirmation, currentSlang.name, newConfig.language);
+        speakAI(settingSwitch.confirmation, () => setAiState('idle'), newConfig, newSpeed);
+      }, 400);
+      return;
+    }
+
     // 2. We strictly honor the user's chosen language: config.language
     let activeLanguage = config.language;
     let activeRegion = config.region;
@@ -824,55 +926,25 @@ export default function App() {
     }, 450);
   };
 
-  // Handle Spoken Input during 6-Step Voice-Guided Setup Flow
+  // Handle Spoken Input during 6-Step Voice-Guided Setup Flow (STRICT, NON-SKIPPABLE)
   const handleSetupVoiceInput = (userText) => {
     if (!userText || !userText.trim()) return;
-    const lower = userText.toLowerCase().trim();
+
+    // RULE: At ANY point during setup, the user may explicitly change language
+    // e.g., "எனக்கு இங்கிலிஷ்ல பேசணும்", "speak in english", "മലയാളത്തിൽ സംസാരിക്കൂ"
+    const explicitLang = matchLanguage(userText);
+    if (explicitLang && explicitLang !== config.language) {
+      handleSelectLanguage(explicitLang);
+      return;
+    }
 
     if (currentStep === 'language') {
-      // Step 1: Language selection
-      let matchedLang = null;
-      if (lower.includes('tamil') || lower.includes('தமிழ்') || lower.includes('thamizh') || lower.includes('tamizh')) {
-        matchedLang = 'tamil';
-      } else if (lower.includes('english') || lower.includes('ஆங்கிலம்')) {
-        matchedLang = 'english';
-      } else if (lower.includes('malayalam') || lower.includes('மலையாளம்') || lower.includes('മലയാളം')) {
-        matchedLang = 'malayalam';
-      } else if (lower.includes('hindi') || lower.includes('இந்தி') || lower.includes('हिंदी')) {
-        matchedLang = 'hindi';
-      } else if (lower.includes('telugu') || lower.includes('தெலுங்கு') || lower.includes('తెలుగు')) {
-        matchedLang = 'telugu';
-      } else if (lower.includes('kannada') || lower.includes('கன்னடம்') || lower.includes('ಕನ್ನಡ')) {
-        matchedLang = 'kannada';
-      } else if (lower.includes('bengali') || lower.includes('வங்காளம்') || lower.includes('বাংলা')) {
-        matchedLang = 'bengali';
-      } else if (lower.includes('marathi') || lower.includes('மராத்தி') || lower.includes('मराठी')) {
-        matchedLang = 'marathi';
-      } else if (lower.includes('gujarati') || lower.includes('குஜராத்தி') || lower.includes('ગુજરાતી')) {
-        matchedLang = 'gujarati';
-      } else if (lower.includes('spanish')) {
-        matchedLang = 'spanish';
-      } else if (lower.includes('french')) {
-        matchedLang = 'french';
-      } else if (lower.includes('german')) {
-        matchedLang = 'german';
-      } else if (lower.includes('japanese')) {
-        matchedLang = 'japanese';
-      } else if (lower.includes('arabic')) {
-        matchedLang = 'arabic';
-      } else {
-        for (const lang of SUPPORTED_LANGUAGES) {
-          if (lower.includes(lang.id) || lower.includes(lang.name.toLowerCase())) {
-            matchedLang = lang.id;
-            break;
-          }
-        }
-      }
-
+      // Step 1: Language selection with intelligent multilingual normalization & alias matching
+      const matchedLang = matchLanguage(userText);
       if (matchedLang) {
         handleSelectLanguage(matchedLang);
       } else {
-        const repeatMsg = "தயவுசெய்து உங்கள் மொழியை மீண்டும் கூறவும் (எ.கா: தமிழ், English, Malayalam, Hindi).";
+        const repeatMsg = "தயவுசெய்து உங்கள் மொழியைத் தேர்ந்தெடுக்கவும் (எ.கா: தமிழ், English, Malayalam, Hindi, Telugu).";
         addMessage('ai', repeatMsg, 'Language Setup', 'tamil');
         speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       }
@@ -880,139 +952,137 @@ export default function App() {
     }
 
     if (currentStep === 'region') {
-      // Step 2: Country / Region selection
+      // Step 2: Country / Region selection in active language
       const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
-      let matchedRegion = null;
-      for (const reg of currentLang.regions) {
-        if (
-          lower.includes(reg.id.toLowerCase()) ||
-          lower.includes(reg.name.toLowerCase()) ||
-          (reg.nativeName && lower.includes(reg.nativeName.toLowerCase()))
-        ) {
-          matchedRegion = reg.id;
-          break;
+      const matchedRegion = matchCountry(userText, currentLang);
+
+      if (matchedRegion) {
+        handleSelectRegion(matchedRegion);
+      } else {
+        let repeatMsg = "Please choose your country (e.g. India, USA, UK, Malaysia, Singapore).";
+        if (config.language === 'tamil') {
+          repeatMsg = "தயவுசெய்து உங்கள் நாட்டைத் தேர்ந்தெடுக்கவும் (எ.கா: இந்தியா, United States, United Kingdom, மலேசியா, சிங்கப்பூர்).";
+        } else if (config.language === 'malayalam') {
+          repeatMsg = "ദയവായി നിങ്ങളുടെ രാജ്യം തിരഞ്ഞെടുക്കുക (ഉദാ: India, United States, United Kingdom, Malaysia, Singapore).";
+        } else if (config.language === 'hindi') {
+          repeatMsg = "कृपया अपना देश चुनें (उदा: India, United States, United Kingdom, Malaysia, Singapore).";
+        } else if (config.language === 'telugu') {
+          repeatMsg = "దయచేసి మీ దేశాన్ని ఎంచుకోండి (ఉదా: India, United States, United Kingdom, Malaysia, Singapore).";
         }
+        addMessage('ai', repeatMsg, 'Country Setup', config.language);
+        speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       }
-      if (!matchedRegion) {
-        if (lower.includes('india') || lower.includes('இந்தியா') || lower.includes('tamil nadu') || lower.includes('தமிழ்நாடு')) {
-          matchedRegion = currentLang.defaultRegion || currentLang.regions[0].id;
-        } else if (lower.includes('us') || lower.includes('united states') || lower.includes('america')) {
-          matchedRegion = currentLang.regions.find(r => r.id === 'united_states')?.id || currentLang.regions[0].id;
-        } else if (lower.includes('uk') || lower.includes('britain') || lower.includes('london')) {
-          matchedRegion = currentLang.regions.find(r => r.id === 'united_kingdom')?.id || currentLang.regions[0].id;
-        } else if (lower.includes('singapore') || lower.includes('சிங்கப்பூர்')) {
-          matchedRegion = currentLang.regions.find(r => r.id === 'singapore')?.id || currentLang.regions[0].id;
-        } else if (lower.includes('sri lanka') || lower.includes('இலங்கை')) {
-          matchedRegion = currentLang.regions.find(r => r.id === 'sri_lanka')?.id || currentLang.regions[0].id;
-        } else {
-          matchedRegion = currentLang.defaultRegion || currentLang.regions[0].id;
-        }
-      }
-      handleSelectRegion(matchedRegion);
       return;
     }
 
     if (currentStep === 'slang') {
-      // Step 3: Slang / Dialect selection
+      // Step 3: Slang / Dialect selection in active language
       const currentLang = SUPPORTED_LANGUAGES.find((l) => l.id === config.language) || SUPPORTED_LANGUAGES[0];
-      let matchedSlang = null;
-      for (const sl of currentLang.slangs) {
-        if (
-          lower.includes(sl.id.toLowerCase()) ||
-          lower.includes(sl.name.toLowerCase()) ||
-          (sl.nativeName && lower.includes(sl.nativeName.toLowerCase()))
-        ) {
-          matchedSlang = sl.id;
-          break;
+      const matchedSlang = matchSlang(userText, currentLang);
+
+      if (matchedSlang) {
+        handleSelectSlang(matchedSlang);
+      } else {
+        let repeatMsg = "Please choose your preferred communication slang or style.";
+        if (config.language === 'tamil') {
+          repeatMsg = "தயவுசெய்து உங்கள் வட்டார வழக்கை தேர்ந்தெடுக்கவும் (எ.கா: Kongu Tamil, Chennai Tamil, Madurai Tamil, Nellai Tamil, Standard Tamil).";
+        } else if (config.language === 'malayalam') {
+          repeatMsg = "ദയവായി സംഭാഷണ ശൈലി തിരഞ്ഞെടുക്കുക (ഉദാ: Valluvanadan Malayalam, Malabar, Travancore, Standard).";
+        } else if (config.language === 'hindi') {
+          repeatMsg = "कृपया अपनी पसंदीदा बोली चुनें (उदा: Delhi Hindi, Mumbai Hindi, Standard Hindi).";
+        } else if (config.language === 'telugu') {
+          repeatMsg = "దయచేసి మీ యాసను ఎంచుకోండి (ఉదా: Telangana, Andhra, Standard Telugu).";
         }
+        addMessage('ai', repeatMsg, 'Slang Setup', config.language);
+        speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       }
-      if (!matchedSlang) {
-        if (lower.includes('kongu') || lower.includes('கொங்கு') || lower.includes('coimbatore') || lower.includes('கோவை')) {
-          matchedSlang = 'kongu_tamil';
-        } else if (lower.includes('chennai') || lower.includes('சென்னை') || lower.includes('madras')) {
-          matchedSlang = 'chennai_tamil';
-        } else if (lower.includes('madurai') || lower.includes('மதுரை')) {
-          matchedSlang = 'madurai_tamil';
-        } else if (lower.includes('nellai') || lower.includes('நெல்லை') || lower.includes('tirunelveli')) {
-          matchedSlang = 'nellai_tamil';
-        } else if (lower.includes('jaffna') || lower.includes('ஈழம்') || lower.includes('sri lanka')) {
-          matchedSlang = 'jaffna_tamil';
-        } else if (lower.includes('casual') || lower.includes('american')) {
-          matchedSlang = currentLang.slangs.find(s => s.id.includes('casual'))?.id;
-        } else if (lower.includes('formal') || lower.includes('standard') || lower.includes('பொது')) {
-          matchedSlang = currentLang.slangs.find(s => s.id.includes('standard'))?.id;
-        }
-      }
-      matchedSlang = matchedSlang || currentLang.slangs[0].id;
-      handleSelectSlang(matchedSlang);
       return;
     }
 
     if (currentStep === 'voice') {
-      // Step 4: Voice Type (Male / Female)
-      let matchedVoice = 'female';
-      if (
-        lower.includes('male') ||
-        lower.includes('ஆண்') ||
-        lower.includes('aan') ||
-        lower.includes('purush') ||
-        lower.includes('man') ||
-        lower.includes('boy')
-      ) {
-        matchedVoice = 'male';
-      } else if (
-        lower.includes('female') ||
-        lower.includes('பெண்') ||
-        lower.includes('pen') ||
-        lower.includes('mahila') ||
-        lower.includes('woman') ||
-        lower.includes('girl')
-      ) {
-        matchedVoice = 'female';
-      } else if (lower.includes('own') || lower.includes('சொந்த') || lower.includes('custom') || lower.includes('my voice')) {
-        matchedVoice = 'user';
+      // Step 4: Centralized Voice Type Recognition (Male, Female, Own Voice)
+      const normalizedText = normalizeVoiceInput(userText);
+      const matchedVoice = matchVoiceType(userText);
+
+      console.log("[Voice Setup] Raw transcript:", userText);
+      console.log("[Voice Setup] Normalized transcript:", normalizedText);
+      console.log("[Voice Setup] Matched Voice:", matchedVoice);
+
+      if (matchedVoice === "male") {
+        handleSelectVoice("male");
+        return;
       }
-      handleSelectVoice(matchedVoice);
+
+      if (matchedVoice === "female") {
+        handleSelectVoice("female");
+        return;
+      }
+
+      if (matchedVoice === "own") {
+        handleSelectVoice("user");
+        return;
+      }
+
+      // Only if voiceType is null: re-prompt in user's chosen language
+      let repeatMsg = "Please select Male or Female voice.";
+      if (config.language === 'tamil') {
+        repeatMsg = "தயவுசெய்து உங்கள் குரல் வகையைத் தேர்ந்தெடுக்கவும்: ஆண் குரல் (Male Voice) அல்லது பெண் குரல் (Female Voice).";
+      } else if (config.language === 'malayalam') {
+        repeatMsg = "ദയവായി ശബ്ദ തരം തിരഞ്ഞെടുക്കുക: പുരുഷ സ്വരം (Male Voice) അതോ സ്ത്രീ സ്വരം (Female Voice).";
+      } else if (config.language === 'hindi') {
+        repeatMsg = "कृपया अपनी आवाज़ चुनें: पुरुष स्वर (Male Voice) या महिला स्वर (Female Voice).";
+      } else if (config.language === 'telugu') {
+        repeatMsg = "దయచేసి మీ వాయిస్ రకాన్ని ఎంచుకోండి: పురుష స్వరం (Male Voice) లేదా స్త్రీ స్వరం (Female Voice).";
+      }
+      addMessage('ai', repeatMsg, 'Voice Setup', config.language);
+      speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       return;
     }
 
     if (currentStep === 'emotion') {
-      // Step 5: Tone (Happy, Calm, Friendly, Husky, Default)
-      let matchedEmotion = 'default';
-      if (lower.includes('happy') || lower.includes('மகிழ்ச்சி') || lower.includes('சந்தோஷம்') || lower.includes('khush')) {
-        matchedEmotion = 'happy';
-      } else if (lower.includes('calm') || lower.includes('அமைதி') || lower.includes('shant')) {
-        matchedEmotion = 'calm';
-      } else if (lower.includes('friendly') || lower.includes('நட்பு') || lower.includes('தோழமை') || lower.includes('friend')) {
-        matchedEmotion = 'friendly';
-      } else if (lower.includes('husky') || lower.includes('கம்பீரம்') || lower.includes('கம்பீரமான') || lower.includes('deep')) {
-        matchedEmotion = 'husky';
-      } else if (lower.includes('default') || lower.includes('இயல்பு') || lower.includes('normal') || lower.includes('standard')) {
-        matchedEmotion = 'default';
-      } else if (lower.includes('sad')) {
-        matchedEmotion = 'sad';
-      } else if (lower.includes('excitement') || lower.includes('உற்சாகம்')) {
-        matchedEmotion = 'excitement';
-      } else if (lower.includes('romantic') || lower.includes('காதல்')) {
-        matchedEmotion = 'romantic';
-      } else if (lower.includes('bold') || lower.includes('அதிரடி')) {
-        matchedEmotion = 'bold';
+      // Step 5: Tone (Happy, Calm, Friendly, Husky)
+      const matchedTone = matchTone(userText);
+
+      if (matchedTone) {
+        handleSelectEmotion(matchedTone);
+      } else {
+        let repeatMsg = "Please choose your voice tone: Happy, Calm, Friendly, or Husky.";
+        if (config.language === 'tamil') {
+          repeatMsg = "தயவுசெய்து உங்கள் வாய்ஸ் டோனைத் தேர்ந்தெடுக்கவும்: மகிழ்ச்சி (Happy), அமைதி (Calm), நட்பு (Friendly), அல்லது கம்பீரம் (Husky).";
+        } else if (config.language === 'malayalam') {
+          repeatMsg = "ദയവായി വോയ്സ് ടോൺ തിരഞ്ഞെടുക്കുക: Happy, Calm, Friendly, അതോ Husky.";
+        } else if (config.language === 'hindi') {
+          repeatMsg = "कृपया आवाज़ का टोन चुनें: Happy, Calm, Friendly, या Husky.";
+        } else if (config.language === 'telugu') {
+          repeatMsg = "దయచేసి వాయిస్ టోన్ ఎంచుకోండి: Happy, Calm, Friendly, లేదా Husky.";
+        }
+        addMessage('ai', repeatMsg, 'Tone Setup', config.language);
+        speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       }
-      handleSelectEmotion(matchedEmotion);
       return;
     }
 
     if (currentStep === 'speed') {
       // Step 6: Speech Speed (Slow, Normal, Fast)
-      let matchedSpeed = 'normal';
-      if (lower.includes('slow') || lower.includes('மெதுவாக') || lower.includes('பொறுமையாக') || lower.includes('மெதுவா')) {
-        matchedSpeed = 'slow';
-      } else if (lower.includes('fast') || lower.includes('வேகமாக') || lower.includes('ஸ்பீடு') || lower.includes('வேகமா')) {
-        matchedSpeed = 'fast';
+      const matchedSpeed = matchSpeechSpeed(userText);
+
+      if (matchedSpeed) {
+        handleChangeSpeechSpeed(matchedSpeed);
       } else {
-        matchedSpeed = 'normal';
+        // Strict Setup: User said unrelated input. DO NOT advance! Re-prompt in current language!
+        let repeatMsg = "Please choose speech speed: Slow, Normal, or Fast.";
+        if (config.language === 'tamil') {
+          repeatMsg = "தயவுசெய்து பேசும் வேகத்தைத் தேர்ந்தெடுக்கவும்: மெதுவாக (Slow), இயல்பாக (Normal), அல்லது வேகமாக (Fast).";
+        } else if (config.language === 'malayalam') {
+          repeatMsg = "ദയവായി സംസാര വേഗത തിരഞ്ഞെടുക്കുക: Slow, Normal, അതോ Fast.";
+        } else if (config.language === 'hindi') {
+          repeatMsg = "कृपया आवाज़ की गति चुनें: Slow, Normal, या Fast.";
+        } else if (config.language === 'telugu') {
+          repeatMsg = "దయచేసి వాయిస్ వేగం ఎంచుకోండి: Slow, Normal, లేదా Fast.";
+        }
+        addMessage('ai', repeatMsg, 'Speed Setup', config.language);
+        speakAI(repeatMsg, () => setAiState('idle'), config, speechSpeed);
       }
-      handleChangeSpeechSpeed(matchedSpeed);
       return;
     }
   };
@@ -1032,6 +1102,25 @@ export default function App() {
       }
       speechAudioEngine.stop();
       setAiState('idle');
+      return;
+    }
+
+    // 2b. Immediately enter Voice Conversation Mode upon clicking (Requirement 1 & 2)
+    if (!hasStartedVoice) {
+      setHasStartedVoice(true);
+    }
+
+    // First Interaction Flow: Friendly Welcome Message before setup (Requirement 1)
+    if (currentStep === 'welcome') {
+      const welcomeText = "வணக்கம்! நான் தமிழி. இது உங்கள் Audio Generator. உங்களுக்கு என்ன உதவி வேண்டுமானாலும் என்னிடம் கேட்கலாம்.";
+      addMessage('ai', welcomeText, 'THAMILI AI', 'tamil');
+      speakAI(welcomeText, () => {
+        // After welcome message is completed, THEN start the setup flow
+        setCurrentStep('language');
+        const langPrompt = "தயவுசெய்து உங்கள் உரையாடலுக்கான மொழியைத் தேர்ந்தெடுக்கவும் (தமிழ், English, Malayalam, Hindi, Telugu).";
+        addMessage('ai', langPrompt, 'Language Setup', 'tamil');
+        speakAI(langPrompt, () => setAiState('idle'), config, speechSpeed);
+      }, config, speechSpeed);
       return;
     }
 
@@ -1078,17 +1167,37 @@ export default function App() {
 
         // Route audio based on setup vs normal conversation
         if (currentStep !== 'completed') {
-          const langHint = currentStep === 'language' ? 'auto' : config.language;
-          const transcribeRes = await apiService.transcribeAudio(audioResult.blob, langHint);
+          // Rule 1: Use 'auto' ONLY during the first language-selection step.
+          // After language is selected, ALWAYS send the selected language's ISO code (e.g. 'ta', 'ml', 'hi', 'te', 'en').
+          const selectedLanguage = config.language;
+          const sttLanguage = currentStep === 'language'
+            ? 'auto'
+            : (STT_LANGUAGE_CODES[selectedLanguage] || 'auto');
+
+          console.log("[STT] Current selected language:", selectedLanguage);
+          console.log("[STT] Sending transcription language:", sttLanguage);
+
+          const transcribeRes = await apiService.transcribeAudio(audioResult.blob, sttLanguage);
 
           if (transcribeRes && transcribeRes.status === 'success' && transcribeRes.text) {
             const userSpokenText = transcribeRes.text.trim();
+            console.log("[STT] Raw transcript:", userSpokenText);
+            console.log("[STT] Selected language:", selectedLanguage);
+            console.log("[STT] STT language code:", sttLanguage);
+
             addMessage('user', userSpokenText, '', config.language);
             handleSetupVoiceInput(userSpokenText);
           } else {
-            const promptMsg = currentStep === 'language'
-              ? "தயவுசெய்து உங்கள் மொழியை மீண்டும் கூறவும்: தமிழ், English, Malayalam, Hindi."
-              : "Please repeat your choice.";
+            let promptMsg = "Please repeat your choice.";
+            if (config.language === 'tamil' || currentStep === 'language') {
+              promptMsg = "தயவுசெய்து உங்கள் தேர்வை மீண்டும் கூறவும்: தமிழ், English, Malayalam, Hindi, Telugu.";
+            } else if (config.language === 'malayalam') {
+              promptMsg = "ദയവായി താങ്കളുടെ തിരഞ്ഞെടുപ്പ് വീണ്ടും പറയുക.";
+            } else if (config.language === 'hindi') {
+              promptMsg = "कृपया अपना विकल्प फिर से कहें।";
+            } else if (config.language === 'telugu') {
+              promptMsg = "దయచేసి మీ ఎంపికను మళ్లీ చెప్పండి.";
+            }
             addMessage('ai', promptMsg, 'Setup', config.language);
             speakAI(promptMsg, () => setAiState('idle'), config, speechSpeed);
           }
@@ -1109,6 +1218,21 @@ export default function App() {
           // Display recognized user transcript in conversation
           if (backendRes.user_text) {
             addMessage('user', backendRes.user_text, '', config.language);
+
+            // Check if user requested a setting change by voice in normal conversation (Requirement 6, 16)
+            const spokenSettingSwitch = checkExplicitSettingSwitch(backendRes.user_text, config);
+            if (spokenSettingSwitch) {
+              if (spokenSettingSwitch.type === 'slang') {
+                setConfig((prev) => ({ ...prev, slang: spokenSettingSwitch.value }));
+              } else if (spokenSettingSwitch.type === 'voice') {
+                setConfig((prev) => ({ ...prev, voice: spokenSettingSwitch.value }));
+              } else if (spokenSettingSwitch.type === 'emotion') {
+                setConfig((prev) => ({ ...prev, emotion: spokenSettingSwitch.value }));
+              } else if (spokenSettingSwitch.type === 'speed') {
+                setSpeechSpeed(spokenSettingSwitch.value);
+                localStorage.setItem('aurqo_speech_speed', spokenSettingSwitch.value);
+              }
+            }
           }
 
           // Display AI response in conversation
@@ -1199,18 +1323,6 @@ export default function App() {
         setTimeout(() => setAiState((c) => (c === 'error' ? 'idle' : c)), 4000);
       }
     }
-  };
-
-  // Stop Speech Playback
-  const handleStopSpeech = () => {
-    if (currentAudioRef.current) {
-      try { currentAudioRef.current.pause(); } catch (_e) {}
-      currentAudioRef.current = null;
-    }
-    audioRecorder.cancelRecording();
-    speechAudioEngine.stop();
-    setAiState('idle');
-    setActivePlayingIndex(null);
   };
 
   // Replay specific message voice audio in its exact language, voice & emotion, with active speechSpeed
@@ -1307,8 +1419,13 @@ export default function App() {
           config={config}
           isMuted={isMuted}
           onToggleMute={() => {
-            if (!isMuted) speechAudioEngine.stop();
-            setIsMuted((m) => !m);
+            setIsMuted((prev) => {
+              const nextMuted = !prev;
+              if (nextMuted) {
+                handleStopSpeech();
+              }
+              return nextMuted;
+            });
           }}
           onOpenDialectModal={() => setIsDialectModalOpen(true)}
           userName={userName}
@@ -1337,6 +1454,15 @@ export default function App() {
                   onOpenChangeLanguage={() => setIsCompactChangeLangOpen(true)}
                   isCollapsed={false}
                   onSwitchToHero={() => setHasStartedVoice(false)}
+                  currentStep={currentStep}
+                  config={config}
+                  speechSpeed={speechSpeed}
+                  onSelectLanguage={handleSelectLanguage}
+                  onSelectRegion={handleSelectRegion}
+                  onSelectSlang={handleSelectSlang}
+                  onSelectVoice={handleSelectVoice}
+                  onSelectEmotion={handleSelectEmotion}
+                  onSelectSpeed={handleChangeSpeechSpeed}
                   voiceControls={
                     <>
                       {/* Integrated Animation Row (AI Character + Energy Bridge + Central Mic) */}
@@ -1428,7 +1554,7 @@ export default function App() {
                 {/* Clean Hero Guidance Caption */}
                 <div className="hero-tap-guidance-pill">
                   <Sparkles size={12} className="text-cyan" />
-                  <span>{speechNotice || (currentStep === 'completed' ? 'Tap to Speak to start voice conversation' : 'Tap to Speak to start voice setup (e.g., "Tamil", "English")')}</span>
+                  <span>{speechNotice || (currentStep === 'completed' ? 'Tap to Speak to start voice conversation' : 'Tap to Speak to start')}</span>
                 </div>
               </div>
             </section>
@@ -1501,6 +1627,15 @@ export default function App() {
                 setIsChatDrawerOpen(false);
                 setIsCompactChangeLangOpen(true);
               }}
+              currentStep={currentStep}
+              config={config}
+              speechSpeed={speechSpeed}
+              onSelectLanguage={handleSelectLanguage}
+              onSelectRegion={handleSelectRegion}
+              onSelectSlang={handleSelectSlang}
+              onSelectVoice={handleSelectVoice}
+              onSelectEmotion={handleSelectEmotion}
+              onSelectSpeed={handleChangeSpeechSpeed}
             />
           </div>
         </div>
